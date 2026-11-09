@@ -1,0 +1,23 @@
+# Local development database only - never use these credentials outside localhost.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gedp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gedp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gedp_local_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-gedp}
+    ports:
+      # bind to loopback only so the dev DB is not exposed on the LAN
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - gedp-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gedp-pgdata:

@@ -53,3 +53,14 @@ next-env.d.ts
 
 .vercel
 .env*
+# env template is safe to commit (placeholders only) - must stay after the last .env* rule
+!.env.example
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# prisma generated client
+/src/generated/
