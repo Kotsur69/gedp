@@ -1,4 +1,6 @@
-// Models are added in the data-model task. Connection URL lives in prisma.config.ts (Prisma 7).
+// GEDP 2027 data model - see "Historia wersji oraz md/Plan/GEDP_Plan_projektu.md" section 4.
+// Connection URL lives in prisma.config.ts (Prisma 7).
+// Convention: PascalCase models / camelCase fields in code, snake_case tables / columns in the database.
 
 generator client {
   provider = "prisma-client"
@@ -7,4 +9,357 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum CycleStatus {
+  PRZYGOTOWANIE
+  OTWARTY
+  ZAMKNIETY
+}
+
+enum DocumentStatus {
+  SZKIC
+  DO_WALIDACJI
+  ZWROCONY
+  ZATWIERDZONY
+}
+
+enum GroupGoalType {
+  PRZYWODZTWO
+  WARTOSCI
+  BHP
+}
+
+// Shared by performance and development goals (SZKIC = not yet added to the plan).
+enum GoalState {
+  SZKIC
+  W_PLANIE
+  ANULOWANY
+}
+
+enum ImportKind {
+  STRUKTURA
+  CELE_I_DOKUMENTY
+}
+
+// ---------------------------------------------------------------------------
+// People and structure
+// ---------------------------------------------------------------------------
+
+model Employee {
+  id                  Int      @id @default(autoincrement())
+  amei                String   @unique
+  email               String   @unique
+  firstName           String   @map("first_name")
+  lastName            String   @map("last_name")
+  managerId           Int?     @map("manager_id")
+  // WF-09: HR-designated validator for employees without a manager in the import.
+  validatorOverrideId Int?     @map("validator_override_id")
+  department          String?
+  position            String?
+  location            String?
+  isWhiteCollar       Boolean  @default(true) @map("is_white_collar")
+  isActive            Boolean  @default(true) @map("is_active")
+  isHrAdmin           Boolean  @default(false) @map("is_hr_admin")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  manager           Employee?  @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports     Employee[] @relation("EmployeeManager")
+  validatorOverride Employee?  @relation("EmployeeValidatorOverride", fields: [validatorOverrideId], references: [id], onDelete: SetNull)
+  overrideFor       Employee[] @relation("EmployeeValidatorOverride")
+
+  ancestors           EmployeeHierarchy[]     @relation("HierarchyDescendant")
+  descendants         EmployeeHierarchy[]     @relation("HierarchyAncestor")
+  documents           GedpDocument[]          @relation("DocumentOwner")
+  documentsToValidate GedpDocument[]          @relation("DocumentValidator")
+  statusChanges       DocumentStatusHistory[]
+  announcementsSeen   AnnouncementSeen[]
+  auditEntries        AuditLog[]
+  importBatches       ImportBatch[]
+
+  @@index([managerId])
+  @@map("employee")
+}
+
+// Closure table rebuilt on every structure import / manager change (depth 0 = self).
+model EmployeeHierarchy {
+  ancestorId   Int @map("ancestor_id")
+  descendantId Int @map("descendant_id")
+  depth        Int
+
+  ancestor   Employee @relation("HierarchyAncestor", fields: [ancestorId], references: [id], onDelete: Cascade)
+  descendant Employee @relation("HierarchyDescendant", fields: [descendantId], references: [id], onDelete: Cascade)
+
+  @@id([ancestorId, descendantId])
+  @@index([descendantId])
+  @@map("employee_hierarchy")
+}
+
+// ---------------------------------------------------------------------------
+// Cycle configuration (HR-05)
+// ---------------------------------------------------------------------------
+
+model Cycle {
+  id                  Int         @id @default(autoincrement())
+  year                Int         @unique
+  status              CycleStatus @default(PRZYGOTOWANIE)
+  goalSettingOpensAt  DateTime?   @map("goal_setting_opens_at") @db.Date
+  goalSettingClosesAt DateTime?   @map("goal_setting_closes_at") @db.Date
+  // Q-03 is open, so document-closing rules are configurable per cycle.
+  minPerformanceGoals Int         @default(1) @map("min_performance_goals")
+  requiredWeightSum   Int         @default(100) @map("required_weight_sum")
+  minDevelopmentGoals Int         @default(1) @map("min_development_goals")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  groupGoalTemplates GroupGoalTemplate[]
+  documents          GedpDocument[]
+  competencies       Competency[]
+  developmentAreas   DevelopmentArea[]
+
+  @@map("cycle")
+}
+
+model GroupGoalTemplate {
+  id        Int           @id @default(autoincrement())
+  cycleId   Int           @map("cycle_id")
+  type      GroupGoalType
+  contentPl String        @map("content_pl")
+  contentEn String        @map("content_en")
+  sortOrder Int           @map("sort_order")
+
+  cycle Cycle          @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  acks  GroupGoalAck[]
+
+  @@unique([cycleId, sortOrder])
+  @@map("group_goal_template")
+}
+
+model Competency {
+  id       Int     @id @default(autoincrement())
+  cycleId  Int     @map("cycle_id")
+  namePl   String  @map("name_pl")
+  nameEn   String  @map("name_en")
+  isActive Boolean @default(true) @map("is_active")
+
+  cycle            Cycle             @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  developmentGoals DevelopmentGoal[]
+
+  @@unique([cycleId, namePl])
+  @@unique([cycleId, nameEn])
+  @@map("competency")
+}
+
+// G3-20: HR-managed list of development focus areas (e.g. "Obecna rola" / "Current role").
+model DevelopmentArea {
+  id       Int     @id @default(autoincrement())
+  cycleId  Int     @map("cycle_id")
+  namePl   String  @map("name_pl")
+  nameEn   String  @map("name_en")
+  isActive Boolean @default(true) @map("is_active")
+
+  cycle            Cycle             @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  developmentGoals DevelopmentGoal[]
+
+  @@unique([cycleId, namePl])
+  @@unique([cycleId, nameEn])
+  @@map("development_area")
+}
+
+model TargetType {
+  id        Int     @id @default(autoincrement())
+  code      String  @unique
+  namePl    String  @map("name_pl")
+  nameEn    String  @map("name_en")
+  isNumeric Boolean @default(false) @map("is_numeric")
+  isActive  Boolean @default(true) @map("is_active")
+
+  performanceGoals PerformanceGoal[]
+
+  @@map("target_type")
+}
+
+// ---------------------------------------------------------------------------
+// GEDP document and goals
+// ---------------------------------------------------------------------------
+
+model GedpDocument {
+  id          Int            @id @default(autoincrement())
+  employeeId  Int            @map("employee_id")
+  cycleId     Int            @map("cycle_id")
+  status      DocumentStatus @default(SZKIC)
+  validatorId Int?           @map("validator_id")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  employee  Employee  @relation("DocumentOwner", fields: [employeeId], references: [id], onDelete: Restrict)
+  cycle     Cycle     @relation(fields: [cycleId], references: [id], onDelete: Restrict)
+  validator Employee? @relation("DocumentValidator", fields: [validatorId], references: [id], onDelete: SetNull)
+
+  groupGoalAcks    GroupGoalAck[]
+  performanceGoals PerformanceGoal[]
+  developmentGoals DevelopmentGoal[]
+  statusHistory    DocumentStatusHistory[]
+
+  @@unique([employeeId, cycleId])
+  @@index([cycleId, status])
+  @@index([validatorId])
+  @@map("gedp_document")
+}
+
+model GroupGoalAck {
+  id             Int      @id @default(autoincrement())
+  documentId     Int      @map("document_id")
+  templateId     Int      @map("template_id")
+  acknowledgedAt DateTime @default(now()) @map("acknowledged_at")
+  // Only filled for BHP templates.
+  hsCommitment   String?  @map("hs_commitment")
+
+  document GedpDocument      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  template GroupGoalTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, templateId])
+  @@map("group_goal_ack")
+}
+
+model PerformanceGoal {
+  id               Int       @id @default(autoincrement())
+  documentId       Int       @map("document_id")
+  title            String
+  description      String?
+  measures         String?
+  targetTypeId     Int?      @map("target_type_id")
+  // Stored as text because target types include TEXT; numeric types are validated in zod.
+  targetValue      String?   @map("target_value")
+  dueDate          DateTime? @map("due_date") @db.Date
+  progress         Int       @default(0)
+  weight           Int?
+  state            GoalState @default(SZKIC)
+  changedByManager Boolean   @default(false) @map("changed_by_manager")
+  // Reserved for goal cascading (out of scope for 1.0).
+  cascadedFromId   Int?      @map("cascaded_from_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  document     GedpDocument      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  targetType   TargetType?       @relation(fields: [targetTypeId], references: [id], onDelete: Restrict)
+  cascadedFrom PerformanceGoal?  @relation("GoalCascade", fields: [cascadedFromId], references: [id], onDelete: SetNull)
+  cascadedTo   PerformanceGoal[] @relation("GoalCascade")
+
+  @@index([documentId])
+  @@map("performance_goal")
+}
+
+// Only fields common to both candidate models; measure / type / weight wait for Q-04.
+model DevelopmentGoal {
+  id                Int       @id @default(autoincrement())
+  documentId        Int       @map("document_id")
+  developmentAreaId Int?      @map("development_area_id")
+  competencyId      Int?      @map("competency_id")
+  actionTitle       String    @map("action_title")
+  actionDescription String?   @map("action_description")
+  startDate         DateTime? @map("start_date") @db.Date
+  endDate           DateTime? @map("end_date") @db.Date
+  progress          Int       @default(0)
+  state             GoalState @default(SZKIC)
+  changedByManager  Boolean   @default(false) @map("changed_by_manager")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  document        GedpDocument     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  developmentArea DevelopmentArea? @relation(fields: [developmentAreaId], references: [id], onDelete: Restrict)
+  competency      Competency?      @relation(fields: [competencyId], references: [id], onDelete: Restrict)
+
+  @@index([documentId])
+  @@map("development_goal")
+}
+
+model DocumentStatusHistory {
+  id         Int             @id @default(autoincrement())
+  documentId Int             @map("document_id")
+  // Null for the initial transition when the document is created.
+  fromStatus DocumentStatus? @map("from_status")
+  toStatus   DocumentStatus  @map("to_status")
+  authorId   Int             @map("author_id")
+  comment    String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  document GedpDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author   Employee     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([documentId, createdAt])
+  @@map("document_status_history")
+}
+
+// ---------------------------------------------------------------------------
+// Content, notifications, audit and imports
+// ---------------------------------------------------------------------------
+
+model ContentBlock {
+  id          Int       @id @default(autoincrement())
+  key         String
+  contentPl   String    @map("content_pl")
+  contentEn   String    @map("content_en")
+  version     Int       @default(1)
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([key, version])
+  @@map("content_block")
+}
+
+model AnnouncementSeen {
+  employeeId     Int      @map("employee_id")
+  contentVersion Int      @map("content_version")
+  seenAt         DateTime @default(now()) @map("seen_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, contentVersion])
+  @@map("announcement_seen")
+}
+
+// SEC-03: append-only. UPDATE / DELETE are revoked from the application DB role in a migration.
+// The FK uses Restrict (never SetNull/Cascade) so no referential action ever has to modify this table.
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  // Null for system actions (e.g. scheduled jobs).
+  actorId   Int?     @map("actor_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  entity    String
+  entityId  String   @map("entity_id")
+  action    String
+  before    Json?
+  after     Json?
+
+  actor Employee? @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model ImportBatch {
+  id               Int        @id @default(autoincrement())
+  fileName         String     @map("file_name")
+  authorId         Int        @map("author_id")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  kind             ImportKind
+  // Scope selected by HR for the import (e.g. cycle, departments).
+  scope            Json?
+  newCount         Int        @default(0) @map("new_count")
+  changedCount     Int        @default(0) @map("changed_count")
+  deactivatedCount Int        @default(0) @map("deactivated_count")
+  errorCount       Int        @default(0) @map("error_count")
+
+  author Employee @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([createdAt])
+  @@map("import_batch")
 }
