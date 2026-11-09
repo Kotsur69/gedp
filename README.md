@@ -1,8 +1,8 @@
 # GEDP 2027
 
 Web tool for the annual employee goals & development process: group goals,
-performance goals, development goals, a manager / N+2 / HR approval workflow
-and an HR panel with reports.
+performance goals, development goals, validation by the direct manager (N+1),
+visibility for higher-level managers, HR oversight and an HR panel with reports.
 
 ## Stack
 
