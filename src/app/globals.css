@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
+/*
+ * ArcelorMittal brand layer, shared with AMSteel_Quote ("V6 Aurora" light theme): a pastel wash of
+ * the AM gradient behind frosted white cards, gradient CTAs, Gilroy.
+ * Gradient stops: Branding/paleta_kolorow.md. Text colours: AMSteel_Quote brand-theme.css.
+ * Contrast: ink (#26142a) and ink-soft (#6f5d74) pass AA on white; accent (#b0236a) passes AA on
+ * white. Light theme only for now (AMSteel's dark "Midnight" variant can be ported later).
+ */
+@theme {
+  --color-brand-purple: #7f1878;
+  --color-brand-magenta: #c12974;
+  --color-brand-coral: #e74341;
+  --color-brand-orange: #f58847;
+  --color-brand-logo: #ff3700;
+
+  --color-accent: #b0236a;
+  --color-ink: #26142a;
+  --color-ink-soft: #6f5d74;
+  --color-line: rgb(127 24 120 / 0.15);
+  --color-line-strong: rgb(127 24 120 / 0.32);
+  --color-danger: #b42318;
+
+  --font-sans: var(--font-gilroy), -apple-system, "Segoe UI", sans-serif;
+
+  --shadow-card: 0 30px 70px -30px rgb(127 24 120 / 0.45);
+  --shadow-panel: 0 10px 30px -18px rgb(127 24 120 / 0.35);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: light;
+  /* Used as `bg-(image:--am-gradient)` for primary CTAs and badges. */
+  --am-gradient: linear-gradient(110deg, #7f1878 0%, #c12974 35%, #e74341 68%, #f58847 100%);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-ink);
+  background:
+    radial-gradient(700px 500px at 10% 10%, #f0c6e6 0%, transparent 60%),
+    radial-gradient(800px 600px at 95% 90%, #fdd0b8 0%, transparent 60%),
+    #fbf6f8;
+  background-attachment: fixed;
+}
+
+/* One visible focus style for every interactive element (keyboard users). */
+:where(a, button, select, input, textarea):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

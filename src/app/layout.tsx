@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+// Gilroy: ArcelorMittal brand typeface (Branding/fonts). Regular for text, SemiBold for headings.
+const gilroy = localFont({
+  variable: "--font-gilroy",
+  display: "swap",
+  src: [
+    { path: "./fonts/Gilroy-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Gilroy-SemiBold.woff2", weight: "600", style: "normal" },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -19,11 +19,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="pl"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="pl" className={`${gilroy.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>
   );
 }
