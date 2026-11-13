@@ -1,0 +1,13 @@
+﻿amei;email;imie;nazwisko;amei_przelozonego;dzial;stanowisko;lokalizacja;white_collar;aktywny;data_zatrudnienia;hr_admin
+AM0090001;anna.nowak.1@example.com;Anna;Nowak;;Zarząd;Dyrektor Zarządzający;Oddział A;TAK;TAK;2011-02-01;NIE
+AM0090002;piotr.kowalczyk.2@example.com;Piotr;Kowalczyk;AM0090001;Produkcja;Dyrektor;Oddział A;TAK;TAK;2012-03-01;NIE
+AM0090003;ewa.zielinska.3@example.com;Ewa;Zielinska;AM0090001;HR;Dyrektor;Oddział A;TAK;TAK;2013-04-01;TAK
+AM0090004;tomasz.wojcik.4@example.com;Tomasz;Wojcik;AM0090002;Produkcja;Kierownik;Oddział A;TAK;TAK;2014-05-01;NIE
+AM0090005;monika.krawczyk.5@example.com;Monika;Krawczyk;AM0090002;Produkcja;Kierownik;Oddział A;TAK;TAK;2015-06-01;NIE
+AM0090006;adam.pawlak.6@example.com;Adam;Pawlak;AM0090003;HR;Specjalista ds. kadr;Oddział A;TAKK;TAK;2016-07-01;TAK
+AM0090007;joanna.mazur.7@example.com;Joanna;Mazur;AM0090004;Produkcja;Specjalista;Oddział A;TAK;yes;2017-08-01;NIE
+AM0090008;marcin.krol.8@example.com;Marcin;Krol;AM0090004;Produkcja;Operator;Oddział A;NIE;TAK;2018-09-01;NIE
+AM0090009;natalia.grabowska.9@example.com;Natalia;Grabowska;AM0090005;Produkcja;Specjalista;Oddział A;TAK;TAK;2019-01-01;NIE
+AM0090010;jakub.michalski.10@example.com;Jakub;Michalski;AM0090005;Produkcja;Specjalista;Oddział A;TAK;NIE;2020-02-01;NIE
+AM0090011;barbara.wieczorek.11@example.com;Barbara;Wieczorek;AM0090003;HR;Specjalista;Oddział A;TAK;TAK;;NIE
+AM0090012;grzegorz.lewandowski.12@example.com;Grzegorz;Lewandowski;AM0090004;Produkcja;Specjalista;Oddział A;TAK;TAK;2022-04-01;NIE

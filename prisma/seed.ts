@@ -1,10 +1,11 @@
 // Synthetic, idempotent seed for local development and tests (plan section 6: never real employees).
 // Every row is keyed by a natural unique key (AMEI, year, code, ...) and upserted, and the child rows of
 // seeded documents are replaced, so running `npm run db:seed` twice leaves the database in the same state.
-// The employee_hierarchy closure table is NOT filled here - its rebuild is a separate task.
+// The employee_hierarchy closure table is rebuilt from the seeded managers at the end.
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Prisma } from "../src/generated/prisma/client";
+import { rebuildHierarchy } from "../src/server/hierarchy";
 import {
   COMPETENCIES,
   CONTENT_BLOCK_KEYS,
@@ -297,7 +298,9 @@ async function main(): Promise<void> {
         await seedReferenceData(tx);
         const cycle2026 = await seedCycle(tx, 2026, "ZAMKNIETY");
         await seedCycle(tx, 2027, "OTWARTY");
-        return seedDocuments2026(tx, cycle2026, specs, idByAmei);
+        const docs = await seedDocuments2026(tx, cycle2026, specs, idByAmei);
+        await rebuildHierarchy(tx);
+        return docs;
       },
       { timeout: TX_TIMEOUT_MS },
     );
