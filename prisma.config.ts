@@ -1,12 +1,10 @@
 import { existsSync } from "node:fs";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 // Prisma 7 no longer loads .env automatically; use Node's built-in loader (no dotenv dependency).
 if (existsSync(".env")) {
   process.loadEnvFile(".env");
 }
-
-type Env = { DATABASE_URL: string };
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -14,7 +12,9 @@ export default defineConfig({
     path: "prisma/migrations",
     seed: "tsx prisma/seed.ts",
   },
+  // Optional on purpose: `prisma generate` (run by `npm run build`, e.g. on Vercel) needs no database.
+  // Migrate / seed commands fail with Prisma's own "missing datasource url" error when it is unset.
   datasource: {
-    url: env<Env>("DATABASE_URL"),
+    url: process.env.DATABASE_URL,
   },
 });
