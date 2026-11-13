@@ -11,10 +11,13 @@ export function createTestDb(): PrismaClient {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 }
 
-/** Empties the tables the domain tests use. audit_log is truncated as the table owner (tests run as owner). */
+/**
+ * Empties the tables the domain tests use; CASCADE also clears everything that references
+ * employee or cycle (documents, goals, history). audit_log is truncated as the table owner.
+ */
 export async function resetTestDb(db: PrismaClient): Promise<void> {
   await db.$executeRawUnsafe(
-    'TRUNCATE TABLE "audit_log", "employee_hierarchy", "employee" RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE "audit_log", "employee_hierarchy", "employee", "cycle" RESTART IDENTITY CASCADE',
   );
 }
 
