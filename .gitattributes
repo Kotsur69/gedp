@@ -1,0 +1,2 @@
+# Test fixtures are stored byte-for-byte (CRLF + BOM CSVs mimic Excel exports).
+tests/fixtures/** -text
