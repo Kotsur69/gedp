@@ -5,21 +5,27 @@ import { getTranslations } from "next-intl/server";
 import { authSettings } from "@/auth.config";
 import { db } from "@/server/db";
 import { getAccess } from "@/server/current-employee";
-import { devSignInAction } from "@/server/auth-actions";
+import { devSignInAction, passwordSignInAction } from "@/server/auth-actions";
 import { BrandCard } from "@/components/brand-card";
 import { SubmitButton } from "@/components/submit-button";
 
 // Layout and styling follow the AMSteel_Quote login (same company, shared brand layer).
+// Which forms appear depends on configuration: e-mail + password for test accounts
+// (AUTH_PASSWORD_LOGIN) and/or the synthetic-employee picker (AUTH_DEV_LOGIN, local only).
 
-type LoginErrorKey = "invalid" | "signin";
+type LoginErrorKey = "invalid" | "signin" | "credentials";
 const ERROR_KEYS: Readonly<Record<string, LoginErrorKey>> = {
   invalid: "invalid",
   signin: "signin",
+  credentials: "credentials",
   // Set by Auth.js itself when a credentials callback is rejected outside the server action.
   CredentialsSignin: "signin",
 };
 const ERROR_ID = "login-error";
 const HINT_ID = "login-hint";
+const FIELD_CLASSES =
+  "h-12 w-full rounded-xl border border-line bg-white px-4 text-sm text-ink transition-colors focus:border-accent aria-invalid:border-danger";
+const LABEL_CLASSES = "mb-2 block text-xs font-semibold tracking-wider text-ink-soft uppercase";
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string | string[] }>;
@@ -47,11 +53,81 @@ async function LoginSection({ searchParams }: LoginPageProps) {
   if ((await getAccess()).kind === "ok") redirect("/");
   const t = await getTranslations("auth");
 
-  if (!authSettings.devLogin) {
+  if (!authSettings.passwordLogin && !authSettings.devLogin) {
     return <p className="rounded-xl bg-accent/7 px-4 py-3 text-sm leading-relaxed text-ink">{t("ssoPending")}</p>;
   }
 
   const errorKey = errorKeyFor((await searchParams).error);
+  return (
+    <div className="space-y-6">
+      {errorKey && (
+        <p
+          id={ERROR_ID}
+          role="alert"
+          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger"
+        >
+          {t(`errors.${errorKey}`)}
+        </p>
+      )}
+      {authSettings.passwordLogin && <PasswordForm hasError={errorKey === "credentials"} />}
+      {authSettings.passwordLogin && authSettings.devLogin && (
+        <div className="flex items-center gap-3 text-xs text-ink-soft" aria-hidden="true">
+          <span className="h-px flex-1 bg-line" />
+          {t("or")}
+          <span className="h-px flex-1 bg-line" />
+        </div>
+      )}
+      {authSettings.devLogin && <DevPickerForm hasError={errorKey === "invalid" || errorKey === "signin"} />}
+    </div>
+  );
+}
+
+async function PasswordForm({ hasError }: { hasError: boolean }) {
+  const t = await getTranslations("auth");
+  const describedBy = hasError ? ERROR_ID : undefined;
+  return (
+    <form action={passwordSignInAction} className="space-y-4">
+      <div>
+        <label htmlFor="email" className={LABEL_CLASSES}>
+          {t("email")}
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          maxLength={254}
+          autoComplete="username"
+          spellCheck={false}
+          aria-invalid={hasError || undefined}
+          aria-describedby={describedBy}
+          className={FIELD_CLASSES}
+        />
+      </div>
+      <div>
+        <label htmlFor="password" className={LABEL_CLASSES}>
+          {t("password")}
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          maxLength={200}
+          autoComplete="current-password"
+          aria-invalid={hasError || undefined}
+          aria-describedby={describedBy}
+          className={FIELD_CLASSES}
+        />
+      </div>
+      <p className="text-xs leading-relaxed text-ink-soft">{t("testAccountsHint")}</p>
+      <SubmitButton pendingLabel={t("signingIn")}>{t("signIn")}</SubmitButton>
+    </form>
+  );
+}
+
+async function DevPickerForm({ hasError }: { hasError: boolean }) {
+  const t = await getTranslations("auth");
   const employees = await db().employee.findMany({
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     select: {
@@ -64,7 +140,7 @@ async function LoginSection({ searchParams }: LoginPageProps) {
       _count: { select: { directReports: true } },
     },
   });
-  const describedBy = errorKey ? `${ERROR_ID} ${HINT_ID}` : HINT_ID;
+  const describedBy = hasError ? `${ERROR_ID} ${HINT_ID}` : HINT_ID;
   const flagLabels: FlagLabels = {
     hr: t("flags.hr"),
     inactive: t("flags.inactive"),
@@ -75,17 +151,17 @@ async function LoginSection({ searchParams }: LoginPageProps) {
   return (
     <form action={devSignInAction} className="space-y-6">
       <div>
-        <label htmlFor="employeeId" className="mb-2 block text-xs font-semibold tracking-wider text-ink-soft uppercase">
-          {t("signInAs")}
+        <label htmlFor="employeeId" className={LABEL_CLASSES}>
+          {authSettings.passwordLogin ? t("quickSignIn") : t("signInAs")}
         </label>
         <select
           id="employeeId"
           name="employeeId"
           required
           defaultValue=""
-          aria-invalid={errorKey ? true : undefined}
+          aria-invalid={hasError || undefined}
           aria-describedby={describedBy}
-          className="h-12 w-full cursor-pointer rounded-xl border border-line bg-white px-4 text-sm text-ink transition-colors focus:border-accent aria-invalid:border-danger"
+          className={`${FIELD_CLASSES} cursor-pointer`}
         >
           <option value="" disabled>
             {t("choosePerson")}
@@ -100,18 +176,9 @@ async function LoginSection({ searchParams }: LoginPageProps) {
           {t("devHint")}
         </p>
       </div>
-
-      {errorKey && (
-        <p
-          id={ERROR_ID}
-          role="alert"
-          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger"
-        >
-          {t(`errors.${errorKey}`)}
-        </p>
-      )}
-
-      <SubmitButton pendingLabel={t("signingIn")}>{t("signIn")}</SubmitButton>
+      <SubmitButton variant={authSettings.passwordLogin ? "secondary" : "primary"} pendingLabel={t("signingIn")}>
+        {t("signIn")}
+      </SubmitButton>
     </form>
   );
 }

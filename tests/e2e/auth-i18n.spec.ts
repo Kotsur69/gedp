@@ -13,7 +13,7 @@ async function signInAsRegularEmployee(page: Page) {
   });
   expect(value, "seed has a regular employee").not.toBe("");
   await select.selectOption(value);
-  await page.locator("button[type=submit]:visible").click();
+  await page.locator("form:has(select#employeeId) button[type=submit]:visible").click();
   await expect(page.locator("h1#greeting:visible")).toBeVisible();
 }
 
@@ -21,7 +21,7 @@ test.describe("[NFR-01] language switch", () => {
   test("Polish by default, English on request, remembered across reloads", async ({ page }) => {
     await page.goto("/login");
     await expect(page.locator("html")).toHaveAttribute("lang", "pl");
-    await expect(page.getByText("Zaloguj jako").first()).toBeVisible();
+    await expect(page.locator("button[type=submit]:visible").first()).toHaveText("Zaloguj");
 
     await signInAsRegularEmployee(page);
     await expect(page.locator("h1#greeting:visible")).toContainText("Witaj w panelu na rok 2027");
@@ -46,7 +46,7 @@ test.describe("[NFR-01] language switch", () => {
   test("the switch works before sign-in, on the login page", async ({ page }) => {
     await page.goto("/login");
     await page.locator("button[aria-label=English]:visible").click();
-    await expect(page.getByText("Sign in as").first()).toBeVisible();
+    await expect(page.locator("button[type=submit]:visible").first()).toHaveText("Sign in");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
 });

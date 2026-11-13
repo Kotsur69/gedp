@@ -363,9 +363,15 @@
     "signIn": "Zaloguj",
     "signingIn": "Logowanie…",
     "ssoPending": "Logowanie firmowe (SSO) zostanie włączone po decyzji działu IT.",
+    "email": "E-mail",
+    "password": "Hasło",
+    "testAccountsHint": "Konta testowe z danymi fikcyjnymi. Logowanie firmowe (SSO) zastąpi je po decyzji działu IT.",
+    "or": "lub",
+    "quickSignIn": "Szybkie logowanie testowe",
     "errors": {
       "invalid": "Wybierz osobę z listy.",
-      "signin": "Nie udało się zalogować. Spróbuj ponownie."
+      "signin": "Nie udało się zalogować. Spróbuj ponownie.",
+      "credentials": "Nieprawidłowy e-mail lub hasło."
     },
     "flags": {
       "hr": "HR",

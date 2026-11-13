@@ -81,6 +81,7 @@ jobs:
       # Never copy them into a real deployment.
       AUTH_DEV_LOGIN: "true"
       AUTH_DEV_LOGIN_ALLOW_IN_PRODUCTION: "true"
+      AUTH_PASSWORD_LOGIN: "true"
       AUTH_TRUST_HOST: "true"
       PLAYWRIGHT_BASE_URL: http://localhost:3000
     steps:
@@ -102,6 +103,10 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
           npm run db:seed
+      - name: Create password test accounts (credentials stay in the runner's temp dir)
+        run: |
+          npm run test-logins -- "$RUNNER_TEMP/test-logins.txt"
+          echo "E2E_LOGINS_FILE=$RUNNER_TEMP/test-logins.txt" >> "$GITHUB_ENV"
       - run: npm run build
       - name: Start the app and wait until it answers
         run: |

@@ -81,9 +81,24 @@ model Employee {
   announcementsSeen   AnnouncementSeen[]
   auditEntries        AuditLog[]
   importBatches       ImportBatch[]
+  loginCredential     LoginCredential?
 
   @@index([managerId])
   @@map("employee")
+}
+
+// Password sign-in for test / demo accounts only (AUTH_PASSWORD_LOGIN). Kept out of `employee`
+// so it can be dropped when company SSO (Entra ID / LDAP, Q-01) replaces it.
+// password_hash format: scrypt$N$r$p$salt$hash (base64url), see src/server/passwords.ts.
+model LoginCredential {
+  employeeId   Int      @id @map("employee_id")
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("login_credential")
 }
 
 // Closure table rebuilt on every structure import / manager change (depth 0 = self).

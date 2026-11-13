@@ -2,6 +2,7 @@
 // Fails fast (throws at startup) on unsafe or invalid configuration.
 
 export const DEV_LOGIN_PROVIDER_ID = "dev-login";
+export const PASSWORD_LOGIN_PROVIDER_ID = "password";
 
 const DEFAULT_IDLE_MINUTES = 30;
 const MIN_IDLE_MINUTES = 5;
@@ -15,6 +16,11 @@ const BUILD_PHASE = "phase-production-build";
 export interface AuthSettings {
   /** "Sign in as a seeded employee" picker - local development and demos only. */
   devLogin: boolean;
+  /**
+   * E-mail + password sign-in for test / demo accounts (scripts/create-test-logins.ts).
+   * Allowed in production: passwords are random, scrypt-hashed and only exist for test people.
+   */
+  passwordLogin: boolean;
   /** Session ends after this many minutes without a request (SEC-07). */
   idleMinutes: number;
   sessionRefreshSeconds: number;
@@ -44,5 +50,6 @@ export function readAuthSettings(env: Env): AuthSettings {
     );
   }
 
-  return { devLogin, idleMinutes, sessionRefreshSeconds: SESSION_REFRESH_SECONDS };
+  const passwordLogin = env.AUTH_PASSWORD_LOGIN === "true";
+  return { devLogin, passwordLogin, idleMinutes, sessionRefreshSeconds: SESSION_REFRESH_SECONDS };
 }

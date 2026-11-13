@@ -2,8 +2,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 import { authConfig, authSettings } from "@/auth.config";
-import { DEV_LOGIN_PROVIDER_ID } from "@/server/auth-settings";
+import { DEV_LOGIN_PROVIDER_ID, PASSWORD_LOGIN_PROVIDER_ID } from "@/server/auth-settings";
 import { db } from "@/server/db";
+import { authenticateWithPassword } from "@/server/password-login";
 
 // Login providers are chosen by configuration (ACC-03). Today only the dev picker exists;
 // the production provider (Microsoft Entra ID or LDAP/AD, Q-01) is added to `providers` below
@@ -29,7 +30,15 @@ const devLogin = Credentials({
   },
 });
 
+// Test / demo accounts with a password (scripts/create-test-logins.ts).
+const passwordLogin = Credentials({
+  id: PASSWORD_LOGIN_PROVIDER_ID,
+  name: "Password",
+  credentials: { email: {}, password: {} },
+  authorize: (raw) => authenticateWithPassword(db(), raw),
+});
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  providers: authSettings.devLogin ? [devLogin] : [],
+  providers: [...(authSettings.passwordLogin ? [passwordLogin] : []), ...(authSettings.devLogin ? [devLogin] : [])],
 });

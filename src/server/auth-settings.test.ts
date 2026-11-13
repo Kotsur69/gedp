@@ -2,8 +2,20 @@ import { describe, expect, it } from "vitest";
 import { readAuthSettings } from "./auth-settings";
 
 describe("readAuthSettings", () => {
-  it("defaults to dev login off and a 30 minute idle timeout", () => {
-    expect(readAuthSettings({})).toEqual({ devLogin: false, idleMinutes: 30, sessionRefreshSeconds: 60 });
+  it("defaults to both test logins off and a 30 minute idle timeout", () => {
+    expect(readAuthSettings({})).toEqual({
+      devLogin: false,
+      passwordLogin: false,
+      idleMinutes: 30,
+      sessionRefreshSeconds: 60,
+    });
+  });
+
+  it("enables password login only for the exact string 'true', also in production", () => {
+    expect(readAuthSettings({ AUTH_PASSWORD_LOGIN: "true" }).passwordLogin).toBe(true);
+    expect(readAuthSettings({ AUTH_PASSWORD_LOGIN: "1" }).passwordLogin).toBe(false);
+    const prodEnv = { NODE_ENV: "production", AUTH_SECRET: "x".repeat(32), AUTH_PASSWORD_LOGIN: "true" };
+    expect(readAuthSettings(prodEnv).passwordLogin).toBe(true);
   });
 
   it("enables dev login only for the exact string 'true'", () => {

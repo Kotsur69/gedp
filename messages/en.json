@@ -363,9 +363,15 @@
     "signIn": "Sign in",
     "signingIn": "Signing in…",
     "ssoPending": "Company sign-in (SSO) will be enabled once IT has decided.",
+    "email": "Email",
+    "password": "Password",
+    "testAccountsHint": "Test accounts with synthetic data. Company sign-in (SSO) will replace them once IT has decided.",
+    "or": "or",
+    "quickSignIn": "Quick test sign-in",
     "errors": {
       "invalid": "Choose a person from the list.",
-      "signin": "Sign-in failed. Please try again."
+      "signin": "Sign-in failed. Please try again.",
+      "credentials": "Incorrect email or password."
     },
     "flags": {
       "hr": "HR",
