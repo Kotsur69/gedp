@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { authSettings } from "@/auth.config";
 import { db } from "@/server/db";
 import { getAccess } from "@/server/current-employee";
@@ -9,14 +10,13 @@ import { BrandCard } from "@/components/brand-card";
 import { SubmitButton } from "@/components/submit-button";
 
 // Layout and styling follow the AMSteel_Quote login (same company, shared brand layer).
-// TODO(glossary): Polish labels are hard-coded until the glossary / next-intl lands.
 
-const SIGN_IN_FAILED = "Nie udało się zalogować. Spróbuj ponownie.";
-const ERROR_MESSAGES: Readonly<Record<string, string>> = {
-  invalid: "Wybierz osobę z listy.",
-  signin: SIGN_IN_FAILED,
+type LoginErrorKey = "invalid" | "signin";
+const ERROR_KEYS: Readonly<Record<string, LoginErrorKey>> = {
+  invalid: "invalid",
+  signin: "signin",
   // Set by Auth.js itself when a credentials callback is rejected outside the server action.
-  CredentialsSignin: SIGN_IN_FAILED,
+  CredentialsSignin: "signin",
 };
 const ERROR_ID = "login-error";
 const HINT_ID = "login-hint";
@@ -26,15 +26,16 @@ type LoginPageProps = {
 };
 
 /** Own-key lookup only: `?error=constructor` must not resolve to Object.prototype members. */
-function errorMessageFor(error: string | string[] | undefined): string | undefined {
-  if (typeof error !== "string" || !Object.hasOwn(ERROR_MESSAGES, error)) return undefined;
-  return ERROR_MESSAGES[error];
+function errorKeyFor(error: string | string[] | undefined): LoginErrorKey | undefined {
+  if (typeof error !== "string" || !Object.hasOwn(ERROR_KEYS, error)) return undefined;
+  return ERROR_KEYS[error];
 }
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const t = await getTranslations("common");
   return (
-    <BrandCard title="GEDP 2027" subtitle="Global Employee Development Program">
-      <Suspense fallback={<p className="text-sm text-ink-soft">Ładowanie…</p>}>
+    <BrandCard title={t("appName")} subtitle={t("programName")}>
+      <Suspense fallback={<p className="text-sm text-ink-soft">{t("loading")}</p>}>
         <LoginSection searchParams={searchParams} />
       </Suspense>
     </BrandCard>
@@ -44,16 +45,13 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
 async function LoginSection({ searchParams }: LoginPageProps) {
   await connection();
   if ((await getAccess()).kind === "ok") redirect("/");
+  const t = await getTranslations("auth");
 
   if (!authSettings.devLogin) {
-    return (
-      <p className="rounded-xl bg-accent/7 px-4 py-3 text-sm leading-relaxed text-ink">
-        Logowanie firmowe (SSO) zostanie włączone po decyzji działu IT.
-      </p>
-    );
+    return <p className="rounded-xl bg-accent/7 px-4 py-3 text-sm leading-relaxed text-ink">{t("ssoPending")}</p>;
   }
 
-  const errorMessage = errorMessageFor((await searchParams).error);
+  const errorKey = errorKeyFor((await searchParams).error);
   const employees = await db().employee.findMany({
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     select: {
@@ -66,49 +64,54 @@ async function LoginSection({ searchParams }: LoginPageProps) {
       _count: { select: { directReports: true } },
     },
   });
-  const describedBy = errorMessage ? `${ERROR_ID} ${HINT_ID}` : HINT_ID;
+  const describedBy = errorKey ? `${ERROR_ID} ${HINT_ID}` : HINT_ID;
+  const flagLabels: FlagLabels = {
+    hr: t("flags.hr"),
+    inactive: t("flags.inactive"),
+    notWhiteCollar: t("flags.notWhiteCollar"),
+    directReports: (count) => t("flags.directReports", { count }),
+  };
 
   return (
     <form action={devSignInAction} className="space-y-6">
       <div>
         <label htmlFor="employeeId" className="mb-2 block text-xs font-semibold tracking-wider text-ink-soft uppercase">
-          Zaloguj jako
+          {t("signInAs")}
         </label>
         <select
           id="employeeId"
           name="employeeId"
           required
           defaultValue=""
-          aria-invalid={errorMessage ? true : undefined}
+          aria-invalid={errorKey ? true : undefined}
           aria-describedby={describedBy}
           className="h-12 w-full cursor-pointer rounded-xl border border-line bg-white px-4 text-sm text-ink transition-colors focus:border-accent aria-invalid:border-danger"
         >
           <option value="" disabled>
-            Wybierz osobę…
+            {t("choosePerson")}
           </option>
           {employees.map((e) => (
             <option key={e.id} value={e.id}>
-              {`${e.lastName} ${e.firstName}${describeFlags(e)}`}
+              {`${e.lastName} ${e.firstName}${describeFlags(e, flagLabels)}`}
             </option>
           ))}
         </select>
         <p id={HINT_ID} className="mt-2 text-xs leading-relaxed text-ink-soft">
-          Środowisko testowe: dane syntetyczne, bez hasła. Osoby „nieaktywny” i „nie WC” zobaczą ekran braku
-          dostępu.
+          {t("devHint")}
         </p>
       </div>
 
-      {errorMessage && (
+      {errorKey && (
         <p
           id={ERROR_ID}
           role="alert"
           className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm font-semibold text-danger"
         >
-          {errorMessage}
+          {t(`errors.${errorKey}`)}
         </p>
       )}
 
-      <SubmitButton pendingLabel="Logowanie…">Zaloguj</SubmitButton>
+      <SubmitButton pendingLabel={t("signingIn")}>{t("signIn")}</SubmitButton>
     </form>
   );
 }
@@ -120,12 +123,19 @@ type EmployeeFlags = {
   _count: { directReports: number };
 };
 
-function describeFlags(e: EmployeeFlags): string {
+type FlagLabels = {
+  hr: string;
+  inactive: string;
+  notWhiteCollar: string;
+  directReports: (count: number) => string;
+};
+
+function describeFlags(e: EmployeeFlags, labels: FlagLabels): string {
   const flags = [
-    e.isHrAdmin && "HR",
-    !e.isActive && "nieaktywny",
-    !e.isWhiteCollar && "nie WC",
-    e._count.directReports > 0 && `podwładni: ${e._count.directReports}`,
+    e.isHrAdmin && labels.hr,
+    !e.isActive && labels.inactive,
+    !e.isWhiteCollar && labels.notWhiteCollar,
+    e._count.directReports > 0 && labels.directReports(e._count.directReports),
   ].filter(Boolean);
   return flags.length > 0 ? ` (${flags.join(", ")})` : "";
 }

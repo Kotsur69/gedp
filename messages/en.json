@@ -1,0 +1,393 @@
+{
+  "common": {
+    "appName": "GEDP 2027",
+    "programName": "Global Employee Development Program",
+    "metaDescription": "Global Employee Development Program – a tool for setting goals and planning development",
+    "footer": "© {year} · Global Employee Development Program",
+    "loading": "Loading…",
+    "open": "Open",
+    "close": "Close",
+    "edit": "Edit",
+    "save": "Save",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "previous": "Previous",
+    "next": "Next",
+    "expand": "Show more",
+    "collapse": "Show less",
+    "search": "Search",
+    "filter": "Filter",
+    "yes": "Yes",
+    "no": "No",
+    "requiredField": "This field is required",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…",
+    "language": {
+      "label": "Language",
+      "pl": "Polski",
+      "en": "English"
+    }
+  },
+  "glossary": {
+    "goalCentre": "Goal Centre",
+    "goals": "Goals",
+    "goal": "Goal",
+    "document": "Document",
+    "cycle": "Cycle",
+    "cycleYear": "{year} cycle",
+    "teamLevel": "Team level",
+    "part": "Part {number}",
+    "parts": {
+      "groupGoals": "Group goals",
+      "performanceGoals": "Performance goals",
+      "developmentGoals": "Development goals"
+    },
+    "groupGoalTypes": {
+      "PRZYWODZTWO": "Leadership goal",
+      "WARTOSCI": "Company values in action",
+      "BHP": "Personal health and safety commitment"
+    },
+    "believeInZero": "Believe in Zero",
+    "documentStatus": {
+      "SZKIC": "Draft",
+      "DO_WALIDACJI": "Pending validation",
+      "ZWROCONY": "Returned for correction",
+      "ZATWIERDZONY": "Approved"
+    },
+    "goalState": {
+      "SZKIC": "Draft",
+      "W_PLANIE": "Added to plan",
+      "ANULOWANY": "Cancelled"
+    },
+    "changedByManager": "Changed by N+1",
+    "goalProgress": {
+      "TO_START": "To start",
+      "ONGOING": "Ongoing",
+      "COMPLETED": "Completed"
+    },
+    "cycleStatus": {
+      "PRZYGOTOWANIE": "In preparation",
+      "OTWARTY": "Open",
+      "ZAMKNIETY": "Closed"
+    },
+    "targetTypes": {
+      "LICZBA": "Number",
+      "TEKST": "Text",
+      "PROCENT": "Percent",
+      "TONY": "Tonnes",
+      "EURO": "Euro",
+      "USD": "US dollar"
+    },
+    "roles": {
+      "employee": "Employee",
+      "manager": "Manager (N+1)",
+      "seniorManager": "Senior manager (N+2 and above)",
+      "hrAdmin": "HR administrator",
+      "validator": "Validator",
+      "validatorOverride": "Substitute validator"
+    },
+    "competency": "Competency",
+    "developmentArea": "Development area",
+    "developmentAreas": {
+      "CURRENT_ROLE": "Current role"
+    }
+  },
+  "header": {
+    "cycleYear": "Cycle year",
+    "readOnlyYear": "This year is closed – view only",
+    "hrContacts": "HR contact list",
+    "toolkit": "GEDP Toolkit",
+    "screen": "{app} – {screen}"
+  },
+  "nav": {
+    "gedpCycle": "GEDP cycle",
+    "myInformation": "My information",
+    "myTeam": "My team",
+    "administrator": "Administrator",
+    "helpAndSupport": "Help and support",
+    "home": "Home",
+    "emptyTab": "We are preparing this tab together with HR."
+  },
+  "home": {
+    "greeting": "Welcome to your {year} dashboard, {firstName}",
+    "greetingShort": "Welcome, {firstName}",
+    "placeholder": "Your Group goals, performance and development goals, and documents to approve will appear here.",
+    "tiles": {
+      "goalCentre": "Goal Centre",
+      "document": "Document",
+      "documentStatus": "Status: {status}"
+    },
+    "myTasks": "My tasks",
+    "noTasks": "You have no tasks right now.",
+    "lastUpdated": "Last updated: {date}",
+    "tasks": {
+      "fillGoals": "Complete your goals",
+      "fillGoalsDescription": "Set your goals for {year} and send the document for validation.",
+      "documentReturned": "Document returned for correction",
+      "documentReturnedDescription": "Your manager returned your document with a comment.",
+      "documentsToValidate": "Documents to validate",
+      "documentsToValidateDescription": "Documents waiting for your validation: {count}"
+    },
+    "statistics": "Statistics",
+    "myOrganisation": "My organisation",
+    "myDirectReports": "My direct reports",
+    "statisticsFilters": {
+      "documents": "{year} documents",
+      "goalCentre": "{year} Goal Centre"
+    }
+  },
+  "goalCentre": {
+    "myGoals": "My goals",
+    "myTeam": "My team",
+    "counters": {
+      "drafts": "Drafts: {count}",
+      "acknowledged": "Acknowledged: {count}",
+      "addedToPlan": "Added to plan: {count}",
+      "notInPlan": "Not added to plan: {count}",
+      "changedByManager": "Changed by N+1: {count}",
+      "cancelled": "Cancelled: {count}",
+      "toStart": "To start: {count}",
+      "ongoing": "Ongoing: {count}",
+      "completed": "Completed: {count}",
+      "totalWeight": "Total weight of goals added to plan: {weight}%"
+    },
+    "addGoal": "Add goal",
+    "copyFromLastYear": "Copy goals from last year",
+    "saveAndClose": "Save and close",
+    "addToPlan": "Add to plan",
+    "cancelGoal": "Cancel goal",
+    "deleteGoal": "Delete goal",
+    "deleteConfirm": "Delete this goal?",
+    "cancelConfirm": "Cancel this goal? It will stay visible as cancelled.",
+    "unsavedChanges": "You have unsaved changes. Close without saving?",
+    "readOnly": "View only",
+    "progressLabel": "Progress"
+  },
+  "groupGoals": {
+    "sectionTitle": "Common goals and expectations for the whole Group",
+    "sectionDescription": "A set of global standards and behaviours expected of ArcelorMittal employees across the Group",
+    "acknowledge": "I acknowledge",
+    "acknowledgedOn": "Acknowledged on {date}",
+    "acknowledgedBadge": "Acknowledged",
+    "commitmentLabel": "My commitment is:",
+    "commitmentHint": "Describe in a precise and concise manner the health and safety objective – what has to be achieved",
+    "commitmentRequired": "Enter your health and safety commitment",
+    "commitmentTooLong": "The commitment can have at most {max} characters",
+    "examplesIntro": "Feel free to take inspiration from the following examples"
+  },
+  "performanceGoals": {
+    "empty": "You have no performance goals yet. Add your first goal or copy last year's goals.",
+    "fields": {
+      "title": "Title",
+      "titleHint": "Define a title for the performance goal",
+      "description": "Goal description",
+      "descriptionHint": "Describe in a precise and concise manner the goal – what has to be achieved",
+      "measures": "Performance measures",
+      "measuresHint": "List the quantitative or qualitative measures that will show the goal has been achieved",
+      "dueDate": "To accomplish by",
+      "dueDateHint": "Specify by when the goal has to be achieved",
+      "progress": "Progress",
+      "progressHint": "Keep track of the goal by updating its progress",
+      "targetType": "Target type",
+      "targetTypeHint": "Define the type of target; if the target is qualitative, select “Text”",
+      "target": "Target",
+      "targetHint": "Define the precise outcome, quantitative or qualitative, expected to be achieved",
+      "weight": "Goal weight (%)",
+      "weightHint": "Define the importance of this goal among your goals; all goal weights should add up to 100%"
+    },
+    "card": {
+      "target": "Target:",
+      "dueDate": "To accomplish by:",
+      "weight": "Weight:"
+    },
+    "errors": {
+      "invalidDate": "Please provide a valid date",
+      "dateOutsideCycle": "The date must fall within {year}",
+      "targetRequired": "Please define a target",
+      "targetNotNumber": "The target must be a number",
+      "weightInvalid": "The weight must be a whole number from 1 to 100"
+    }
+  },
+  "developmentGoals": {
+    "empty": "You have no development goals yet. Add your first goal.",
+    "fields": {
+      "competency": "Competency",
+      "developmentArea": "Development area",
+      "actionTitle": "Development action",
+      "actionDescription": "Action description",
+      "period": "Period",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "progress": "Progress"
+    },
+    "errors": {
+      "endBeforeStart": "The end date cannot be earlier than the start date",
+      "inactiveCompetency": "This competency is no longer available – choose another one"
+    }
+  },
+  "workflow": {
+    "sendForValidation": "Send for validation",
+    "approve": "Approve",
+    "returnForCorrection": "Return for correction",
+    "returnComment": "Reason for return",
+    "returnCommentRequired": "Please give a reason for the return",
+    "missing": "Missing: {items}",
+    "conditions": {
+      "leadershipAcknowledged": "acknowledgement of the Leadership goal",
+      "valuesAcknowledged": "acknowledgement of Company values",
+      "safetyCommitment": "a health and safety commitment",
+      "minPerformanceGoals": "at least {min, plural, one {# performance goal} other {# performance goals}} in the plan",
+      "weightSum": "a total weight of {required}% – currently {current}%",
+      "minDevelopmentGoals": "at least {min, plural, one {# development goal} other {# development goals}} in the plan"
+    },
+    "statusHistory": "Status history",
+    "changedBy": "Changed by: {name}",
+    "changedOn": "Changed on: {date}",
+    "comment": "Comment",
+    "revertStatus": "Revert status",
+    "revertReason": "Reason for reverting",
+    "revertReasonRequired": "Please give a reason for reverting the status"
+  },
+  "team": {
+    "title": "My team",
+    "level": "Level",
+    "directReports": "Direct reports",
+    "wholeStructure": "Whole structure",
+    "name": "Name",
+    "position": "Position",
+    "documentStatus": "Document status",
+    "completion": "Completion",
+    "lastUpdate": "Last update",
+    "openDocument": "Open document",
+    "validateDocument": "Validate document",
+    "empty": "You have no reports in this cycle."
+  },
+  "admin": {
+    "title": "Administrator panel",
+    "sections": {
+      "import": "Data import",
+      "employees": "Employees",
+      "cycles": "Cycles",
+      "content": "Content",
+      "documents": "Documents",
+      "export": "Data export",
+      "audit": "Audit log"
+    },
+    "import": {
+      "title": "Employee structure import",
+      "chooseFile": "Choose a file (Excel or CSV)",
+      "preview": "Import preview",
+      "new": "New: {count}",
+      "changed": "Changed: {count}",
+      "deactivated": "Deactivated: {count}",
+      "errors": "Rows with errors: {count}",
+      "row": "Row {row}",
+      "reason": "Reason",
+      "confirm": "Confirm import",
+      "rejectAll": "Reject all",
+      "nothingSaved": "Nothing has been saved. Data is written only after you confirm the import."
+    },
+    "employeeFields": {
+      "amei": "AMEI",
+      "email": "Email",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "manager": "Manager",
+      "department": "Department",
+      "position": "Position",
+      "location": "Location",
+      "whiteCollar": "White Collar",
+      "active": "Active",
+      "hrAdmin": "HR administrator",
+      "hireDate": "Hire date"
+    },
+    "cycles": {
+      "newAsCopy": "New cycle as a copy of the previous one",
+      "goalSettingOpens": "Goal setting opens",
+      "goalSettingCloses": "Goal setting closes",
+      "competencyCatalog": "Competency catalogue",
+      "targetTypes": "Target types",
+      "closingConditions": "Document closing conditions"
+    },
+    "content": {
+      "startAnnouncement": "Start announcement",
+      "welcomeText": "Welcome text",
+      "headerLinks": "Header links",
+      "preview": "Preview",
+      "publish": "Publish"
+    },
+    "changeReason": "Reason for change",
+    "changeReasonRequired": "Please give a reason for the change",
+    "export": {
+      "whichData": "Which data",
+      "whichYear": "Which year",
+      "whichEmployees": "Which employees",
+      "onePerson": "One person",
+      "selectedPeople": "Selected people",
+      "department": "Department",
+      "everyone": "Everyone",
+      "previewCounts": "People: {people} · Records: {records}",
+      "download": "Download"
+    },
+    "audit": {
+      "actor": "Who",
+      "affectedEmployee": "Affected employee",
+      "dateRange": "Date range",
+      "changeType": "Change type",
+      "before": "Before",
+      "after": "After",
+      "exportEmployeeData": "Export all data of this employee"
+    }
+  },
+  "reports": {
+    "title": "Reports",
+    "documentStatus": "Document status",
+    "completeness": "Completeness",
+    "overdueValidations": "Overdue validations",
+    "overdueFor": "Longer than {days, plural, one {# day} other {# days}}",
+    "goalProgress": "Goal progress",
+    "download": "Download (Excel / CSV)",
+    "completenessChecks": {
+      "groupGoalsNotAcknowledged": "Group goals not acknowledged",
+      "noSafetyCommitment": "No health and safety commitment",
+      "weightSumNot100": "Total weight other than 100%",
+      "noDevelopmentGoal": "No development goal"
+    }
+  },
+  "auth": {
+    "signInAs": "Sign in as",
+    "choosePerson": "Choose a person…",
+    "devHint": "Test environment: synthetic data, no password. People marked “inactive” or “not WC” will see the no-access screen.",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "ssoPending": "Company sign-in (SSO) will be enabled once IT has decided.",
+    "errors": {
+      "invalid": "Choose a person from the list.",
+      "signin": "Sign-in failed. Please try again."
+    },
+    "flags": {
+      "hr": "HR",
+      "inactive": "inactive",
+      "notWhiteCollar": "not WC",
+      "directReports": "reports: {count}"
+    }
+  },
+  "noAccess": {
+    "title": "No access",
+    "checking": "Checking access…",
+    "reasons": {
+      "UNKNOWN": "Your account is not in the list of employees covered by the GEDP process.",
+      "INACTIVE": "Your employee account is inactive.",
+      "NOT_WHITE_COLLAR": "The GEDP process covers White Collar employees only."
+    },
+    "contactHr": "If this is a mistake, please contact HR."
+  },
+  "errors": {
+    "notFound": "Page not found",
+    "notFoundDescription": "The page does not exist or you do not have access to it.",
+    "forbidden": "You are not allowed to do this.",
+    "backHome": "Back to home"
+  }
+}

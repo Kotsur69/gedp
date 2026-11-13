@@ -1,0 +1,393 @@
+{
+  "common": {
+    "appName": "GEDP 2027",
+    "programName": "Global Employee Development Program",
+    "metaDescription": "Global Employee Development Program – narzędzie do ustalania celów i planowania rozwoju",
+    "footer": "© {year} · Global Employee Development Program",
+    "loading": "Ładowanie…",
+    "open": "Otwórz",
+    "close": "Zamknij",
+    "edit": "Edytuj",
+    "save": "Zapisz",
+    "delete": "Usuń",
+    "cancel": "Anuluj",
+    "confirm": "Potwierdź",
+    "back": "Wstecz",
+    "previous": "Poprzednie",
+    "next": "Następne",
+    "expand": "Rozwiń",
+    "collapse": "Zwiń",
+    "search": "Szukaj",
+    "filter": "Filtruj",
+    "yes": "Tak",
+    "no": "Nie",
+    "requiredField": "To pole jest obowiązkowe",
+    "signOut": "Wyloguj",
+    "signingOut": "Wylogowywanie…",
+    "language": {
+      "label": "Język",
+      "pl": "Polski",
+      "en": "English"
+    }
+  },
+  "glossary": {
+    "goalCentre": "Centrum celów",
+    "goals": "Cele",
+    "goal": "Cel",
+    "document": "Dokument",
+    "cycle": "Cykl",
+    "cycleYear": "Cykl {year}",
+    "teamLevel": "Poziom zespołu",
+    "part": "Część {number}",
+    "parts": {
+      "groupGoals": "Cele Grupy",
+      "performanceGoals": "Cele wydajnościowe",
+      "developmentGoals": "Cele rozwojowe"
+    },
+    "groupGoalTypes": {
+      "PRZYWODZTWO": "Cel przywództwa",
+      "WARTOSCI": "Wartości firmy w praktyce",
+      "BHP": "Osobiste zaangażowanie w BHP"
+    },
+    "believeInZero": "Believe in Zero",
+    "documentStatus": {
+      "SZKIC": "Szkic",
+      "DO_WALIDACJI": "Do walidacji",
+      "ZWROCONY": "Zwrócony do poprawy",
+      "ZATWIERDZONY": "Zatwierdzony"
+    },
+    "goalState": {
+      "SZKIC": "Szkic",
+      "W_PLANIE": "Dodany do planu",
+      "ANULOWANY": "Anulowany"
+    },
+    "changedByManager": "Zmieniony przez N+1",
+    "goalProgress": {
+      "TO_START": "Do rozpoczęcia",
+      "ONGOING": "W trakcie",
+      "COMPLETED": "Ukończony"
+    },
+    "cycleStatus": {
+      "PRZYGOTOWANIE": "W przygotowaniu",
+      "OTWARTY": "Otwarty",
+      "ZAMKNIETY": "Zamknięty"
+    },
+    "targetTypes": {
+      "LICZBA": "Liczba",
+      "TEKST": "Tekst",
+      "PROCENT": "Procent",
+      "TONY": "Tony",
+      "EURO": "Euro",
+      "USD": "Dolar USD"
+    },
+    "roles": {
+      "employee": "Pracownik",
+      "manager": "Przełożony (N+1)",
+      "seniorManager": "Przełożony wyższego szczebla (N+2 i wyżej)",
+      "hrAdmin": "Administrator HR",
+      "validator": "Walidator",
+      "validatorOverride": "Walidator zastępczy"
+    },
+    "competency": "Kompetencja",
+    "developmentArea": "Obszar rozwoju",
+    "developmentAreas": {
+      "CURRENT_ROLE": "Obecna rola"
+    }
+  },
+  "header": {
+    "cycleYear": "Rok cyklu",
+    "readOnlyYear": "Ten rok jest zamknięty – tylko podgląd",
+    "hrContacts": "Lista kontaktów HR",
+    "toolkit": "GEDP Toolkit",
+    "screen": "{app} – {screen}"
+  },
+  "nav": {
+    "gedpCycle": "Cykl GEDP",
+    "myInformation": "Moje informacje",
+    "myTeam": "Mój zespół",
+    "administrator": "Administrator",
+    "helpAndSupport": "Pomoc i wsparcie",
+    "home": "Strona główna",
+    "emptyTab": "Zawartość tej zakładki przygotowujemy razem z działem HR."
+  },
+  "home": {
+    "greeting": "Witaj w panelu na rok {year}, {firstName}",
+    "greetingShort": "Witaj, {firstName}",
+    "placeholder": "Tu pojawią się Twoje cele Grupy, cele wydajnościowe i rozwojowe oraz dokumenty do zatwierdzenia.",
+    "tiles": {
+      "goalCentre": "Centrum celów",
+      "document": "Dokument",
+      "documentStatus": "Status: {status}"
+    },
+    "myTasks": "Moje zadania",
+    "noTasks": "Nie masz teraz żadnych zadań.",
+    "lastUpdated": "Data ostatniej aktualizacji: {date}",
+    "tasks": {
+      "fillGoals": "Uzupełnij cele",
+      "fillGoalsDescription": "Ustal cele na rok {year} i wyślij dokument do walidacji.",
+      "documentReturned": "Dokument zwrócony do poprawy",
+      "documentReturnedDescription": "Przełożony zwrócił Twój dokument z komentarzem.",
+      "documentsToValidate": "Dokumenty do walidacji",
+      "documentsToValidateDescription": "Dokumenty czekające na Twoją walidację: {count}"
+    },
+    "statistics": "Statystyki",
+    "myOrganisation": "Moja organizacja",
+    "myDirectReports": "Moi bezpośredni podwładni",
+    "statisticsFilters": {
+      "documents": "Dokumenty {year}",
+      "goalCentre": "Centrum celów {year}"
+    }
+  },
+  "goalCentre": {
+    "myGoals": "Moje cele",
+    "myTeam": "Mój zespół",
+    "counters": {
+      "drafts": "Szkice: {count}",
+      "acknowledged": "Potwierdzone: {count}",
+      "addedToPlan": "Dodane do planu: {count}",
+      "notInPlan": "Nie dodane do planu: {count}",
+      "changedByManager": "Zmienione przez N+1: {count}",
+      "cancelled": "Anulowane: {count}",
+      "toStart": "Do rozpoczęcia: {count}",
+      "ongoing": "W trakcie: {count}",
+      "completed": "Ukończone: {count}",
+      "totalWeight": "Łączna waga celów dodanych do planu: {weight}%"
+    },
+    "addGoal": "Dodaj cel",
+    "copyFromLastYear": "Kopiuj cele z poprzedniego roku",
+    "saveAndClose": "Zapisz i zamknij",
+    "addToPlan": "Dodaj do planu",
+    "cancelGoal": "Anuluj cel",
+    "deleteGoal": "Usuń cel",
+    "deleteConfirm": "Czy na pewno usunąć ten cel?",
+    "cancelConfirm": "Czy na pewno anulować ten cel? Pozostanie widoczny jako anulowany.",
+    "unsavedChanges": "Masz niezapisane zmiany. Zamknąć bez zapisywania?",
+    "readOnly": "Tylko podgląd",
+    "progressLabel": "Postęp"
+  },
+  "groupGoals": {
+    "sectionTitle": "Wspólne cele i oczekiwania całej Grupy",
+    "sectionDescription": "Zestaw globalnych standardów i zachowań oczekiwanych od pracowników ArcelorMittal w całej Grupie",
+    "acknowledge": "Potwierdzam zapoznanie",
+    "acknowledgedOn": "Potwierdzono {date}",
+    "acknowledgedBadge": "Potwierdzony",
+    "commitmentLabel": "Moje zobowiązanie to:",
+    "commitmentHint": "Opisz precyzyjnie i zwięźle cel BHP – co ma zostać osiągnięte",
+    "commitmentRequired": "Wpisz swoje zobowiązanie BHP",
+    "commitmentTooLong": "Zobowiązanie może mieć najwyżej {max} znaków",
+    "examplesIntro": "Możesz zainspirować się poniższymi przykładami"
+  },
+  "performanceGoals": {
+    "empty": "Nie masz jeszcze celów wydajnościowych. Dodaj pierwszy cel albo skopiuj cele z poprzedniego roku.",
+    "fields": {
+      "title": "Tytuł",
+      "titleHint": "Zdefiniuj tytuł celu wydajnościowego",
+      "description": "Opis celu",
+      "descriptionHint": "Opisz precyzyjnie i zwięźle cel – co ma zostać osiągnięte",
+      "measures": "Jak będzie mierzony",
+      "measuresHint": "Wymień ilościowe lub jakościowe miary, które pokażą, że cel został osiągnięty",
+      "dueDate": "Do realizacji do",
+      "dueDateHint": "Określ, do kiedy cel ma zostać osiągnięty",
+      "progress": "Postęp",
+      "progressHint": "Śledź realizację celu, aktualizując jego postęp",
+      "targetType": "Typ celu",
+      "targetTypeHint": "Określ typ celu; jeśli cel jest jakościowy, wybierz „Tekst”",
+      "target": "Wartość docelowa",
+      "targetHint": "Określ dokładny oczekiwany wynik – ilościowy lub jakościowy",
+      "weight": "Waga celu (%)",
+      "weightHint": "Określ znaczenie tego celu wśród Twoich celów; wagi wszystkich celów powinny sumować się do 100%"
+    },
+    "card": {
+      "target": "Wartość docelowa:",
+      "dueDate": "Do realizacji do:",
+      "weight": "Waga:"
+    },
+    "errors": {
+      "invalidDate": "Podaj poprawną datę",
+      "dateOutsideCycle": "Data musi przypadać w roku {year}",
+      "targetRequired": "Określ wartość docelową",
+      "targetNotNumber": "Wartość docelowa musi być liczbą",
+      "weightInvalid": "Waga musi być liczbą całkowitą od 1 do 100"
+    }
+  },
+  "developmentGoals": {
+    "empty": "Nie masz jeszcze celów rozwojowych. Dodaj pierwszy cel.",
+    "fields": {
+      "competency": "Kompetencja",
+      "developmentArea": "Obszar rozwoju",
+      "actionTitle": "Działanie rozwojowe",
+      "actionDescription": "Opis działania",
+      "period": "Okres realizacji",
+      "startDate": "Data rozpoczęcia",
+      "endDate": "Data zakończenia",
+      "progress": "Postęp"
+    },
+    "errors": {
+      "endBeforeStart": "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia",
+      "inactiveCompetency": "Ta kompetencja nie jest już dostępna – wybierz inną"
+    }
+  },
+  "workflow": {
+    "sendForValidation": "Wyślij do walidacji",
+    "approve": "Zatwierdź",
+    "returnForCorrection": "Zwróć do poprawy",
+    "returnComment": "Komentarz do zwrotu",
+    "returnCommentRequired": "Podaj powód zwrotu",
+    "missing": "Brakuje: {items}",
+    "conditions": {
+      "leadershipAcknowledged": "potwierdzenia Celu przywództwa",
+      "valuesAcknowledged": "potwierdzenia Wartości firmy",
+      "safetyCommitment": "zobowiązania BHP",
+      "minPerformanceGoals": "co najmniej {min, plural, one {# celu wydajnościowego} other {# celów wydajnościowych}} w planie",
+      "weightSum": "sumy wag {required}% – obecnie {current}%",
+      "minDevelopmentGoals": "co najmniej {min, plural, one {# celu rozwojowego} other {# celów rozwojowych}} w planie"
+    },
+    "statusHistory": "Historia statusów",
+    "changedBy": "Autor zmiany: {name}",
+    "changedOn": "Data zmiany: {date}",
+    "comment": "Komentarz",
+    "revertStatus": "Cofnij status",
+    "revertReason": "Powód cofnięcia",
+    "revertReasonRequired": "Podaj powód cofnięcia statusu"
+  },
+  "team": {
+    "title": "Mój zespół",
+    "level": "Poziom",
+    "directReports": "Bezpośredni podwładni",
+    "wholeStructure": "Cała struktura",
+    "name": "Imię i nazwisko",
+    "position": "Stanowisko",
+    "documentStatus": "Status dokumentu",
+    "completion": "Stopień uzupełnienia",
+    "lastUpdate": "Ostatnia aktualizacja",
+    "openDocument": "Otwórz dokument",
+    "validateDocument": "Waliduj dokument",
+    "empty": "Nie masz podwładnych w tym cyklu."
+  },
+  "admin": {
+    "title": "Panel administratora",
+    "sections": {
+      "import": "Import danych",
+      "employees": "Pracownicy",
+      "cycles": "Cykle",
+      "content": "Treści",
+      "documents": "Dokumenty",
+      "export": "Eksport danych",
+      "audit": "Dziennik audytu"
+    },
+    "import": {
+      "title": "Import struktury pracowników",
+      "chooseFile": "Wybierz plik (Excel lub CSV)",
+      "preview": "Podgląd importu",
+      "new": "Nowi: {count}",
+      "changed": "Zmienieni: {count}",
+      "deactivated": "Dezaktywowani: {count}",
+      "errors": "Błędne wiersze: {count}",
+      "row": "Wiersz {row}",
+      "reason": "Powód",
+      "confirm": "Zatwierdź import",
+      "rejectAll": "Odrzuć całość",
+      "nothingSaved": "Nic nie zostało zapisane. Dane trafią do bazy dopiero po zatwierdzeniu importu."
+    },
+    "employeeFields": {
+      "amei": "AMEI",
+      "email": "E-mail",
+      "firstName": "Imię",
+      "lastName": "Nazwisko",
+      "manager": "Przełożony",
+      "department": "Dział",
+      "position": "Stanowisko",
+      "location": "Lokalizacja",
+      "whiteCollar": "White Collar",
+      "active": "Aktywny",
+      "hrAdmin": "Administrator HR",
+      "hireDate": "Data zatrudnienia"
+    },
+    "cycles": {
+      "newAsCopy": "Nowy cykl jako kopia poprzedniego",
+      "goalSettingOpens": "Otwarcie ustalania celów",
+      "goalSettingCloses": "Zamknięcie ustalania celów",
+      "competencyCatalog": "Katalog kompetencji",
+      "targetTypes": "Typy celów",
+      "closingConditions": "Warunki zamknięcia dokumentu"
+    },
+    "content": {
+      "startAnnouncement": "Komunikat startowy",
+      "welcomeText": "Tekst powitalny",
+      "headerLinks": "Linki w nagłówku",
+      "preview": "Podgląd",
+      "publish": "Opublikuj"
+    },
+    "changeReason": "Powód zmiany",
+    "changeReasonRequired": "Podaj powód zmiany",
+    "export": {
+      "whichData": "Jakie dane",
+      "whichYear": "Który rok",
+      "whichEmployees": "Których pracowników",
+      "onePerson": "Jedna osoba",
+      "selectedPeople": "Wybrane osoby",
+      "department": "Dział",
+      "everyone": "Wszyscy",
+      "previewCounts": "Osoby: {people} · Rekordy: {records}",
+      "download": "Pobierz"
+    },
+    "audit": {
+      "actor": "Kto",
+      "affectedEmployee": "Dotyczy pracownika",
+      "dateRange": "Zakres dat",
+      "changeType": "Typ zmiany",
+      "before": "Przed",
+      "after": "Po",
+      "exportEmployeeData": "Eksportuj wszystkie dane pracownika"
+    }
+  },
+  "reports": {
+    "title": "Raporty",
+    "documentStatus": "Status dokumentów",
+    "completeness": "Kompletność",
+    "overdueValidations": "Zaległe walidacje",
+    "overdueFor": "Dłużej niż {days, plural, one {# dzień} other {# dni}}",
+    "goalProgress": "Postęp celów",
+    "download": "Pobierz (Excel / CSV)",
+    "completenessChecks": {
+      "groupGoalsNotAcknowledged": "Nie potwierdzono celów Grupy",
+      "noSafetyCommitment": "Brak zobowiązania BHP",
+      "weightSumNot100": "Suma wag inna niż 100%",
+      "noDevelopmentGoal": "Brak celu rozwojowego"
+    }
+  },
+  "auth": {
+    "signInAs": "Zaloguj jako",
+    "choosePerson": "Wybierz osobę…",
+    "devHint": "Środowisko testowe: dane syntetyczne, bez hasła. Osoby „nieaktywny” i „nie WC” zobaczą ekran braku dostępu.",
+    "signIn": "Zaloguj",
+    "signingIn": "Logowanie…",
+    "ssoPending": "Logowanie firmowe (SSO) zostanie włączone po decyzji działu IT.",
+    "errors": {
+      "invalid": "Wybierz osobę z listy.",
+      "signin": "Nie udało się zalogować. Spróbuj ponownie."
+    },
+    "flags": {
+      "hr": "HR",
+      "inactive": "nieaktywny",
+      "notWhiteCollar": "nie WC",
+      "directReports": "podwładni: {count}"
+    }
+  },
+  "noAccess": {
+    "title": "Brak dostępu",
+    "checking": "Sprawdzanie dostępu…",
+    "reasons": {
+      "UNKNOWN": "Twojego konta nie ma w bazie pracowników objętych procesem GEDP.",
+      "INACTIVE": "Twoje konto pracownika jest nieaktywne.",
+      "NOT_WHITE_COLLAR": "Proces GEDP obejmuje tylko pracowników White Collar."
+    },
+    "contactHr": "Jeśli to pomyłka, skontaktuj się z działem HR."
+  },
+  "errors": {
+    "notFound": "Nie znaleziono strony",
+    "notFoundDescription": "Strona nie istnieje albo nie masz do niej dostępu.",
+    "forbidden": "Nie masz uprawnień do tej operacji.",
+    "backHome": "Wróć na stronę główną"
+  }
+}

@@ -1,0 +1,127 @@
+# CI for GEDP (plan section 6): every PR and every push to main runs lint, types, unit + DB tests
+# with the 80% coverage gate, the production build, and browser E2E against a seeded Postgres.
+# The repo is PUBLIC: synthetic data only, no stored secrets, never print environment values.
+# Actions are pinned to full commit SHAs (tag in the comment); Dependabot keeps them current.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Superseded PR runs are cancelled; every run on main finishes.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: "24"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  verify:
+    name: Lint, types, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # Throwaway credentials for this job-local container only.
+          POSTGRES_USER: gedp
+          POSTGRES_PASSWORD: gedp_ci
+          POSTGRES_DB: gedp_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gedp -d gedp_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Unit + DB tests with coverage gate (80%)
+        run: npm run test:coverage
+        env:
+          TEST_DATABASE_URL: postgresql://gedp:gedp_ci@localhost:5432/gedp_test
+      - name: Production build (dev login off, no database, no runtime secrets)
+        run: npm run build
+        env:
+          AUTH_DEV_LOGIN: "false"
+
+  e2e:
+    name: E2E (Playwright, seeded Postgres)
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: gedp
+          POSTGRES_PASSWORD: gedp_ci
+          POSTGRES_DB: gedp_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gedp -d gedp_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://gedp:gedp_ci@localhost:5432/gedp_e2e
+      # Demo-deployment flags: dev login on synthetic data only (see .env.example).
+      # Never copy them into a real deployment.
+      AUTH_DEV_LOGIN: "true"
+      AUTH_DEV_LOGIN_ALLOW_IN_PRODUCTION: "true"
+      AUTH_TRUST_HOST: "true"
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Ephemeral AUTH_SECRET for this run only
+        run: |
+          secret="$(openssl rand -base64 32)"
+          echo "::add-mask::$secret"
+          echo "AUTH_SECRET=$secret" >> "$GITHUB_ENV"
+      - name: Migrate and seed synthetic data
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run db:seed
+      - run: npm run build
+      - name: Start the app and wait until it answers
+        run: |
+          nohup npm run start > next-start.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fsS -o /dev/null http://localhost:3000/login; then exit 0; fi
+            sleep 1
+          done
+          echo "App did not start within 60 s" >&2
+          exit 1
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      # Public repo: artifacts are downloadable by any signed-in user. They only hold synthetic
+      # data and a session signed with this run's throwaway AUTH_SECRET.
+      - name: Upload Playwright traces and server log
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-report
+          path: |
+            test-results/
+            next-start.log
+          retention-days: 3
