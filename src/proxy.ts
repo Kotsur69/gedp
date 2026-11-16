@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/auth.config";
 import { LOCALE_COOKIE, localizedPath } from "@/i18n/config";
+import { isOversizedServerAction } from "@/server/action-body-limit";
 import { buildCsp, CSP_HEADER, generateNonce } from "@/server/security-headers";
 
 // 1) Optimistic gate only: no valid session cookie -> /login. It also re-issues the cookie on
@@ -15,6 +16,10 @@ const PUBLIC_PATHS = new Set(["/login"]);
 
 export default auth((request) => {
   const { pathname } = request.nextUrl;
+  // Before anything else, so the raised action body limit only serves the HR import upload.
+  if (isOversizedServerAction({ method: request.method, pathname, headers: request.headers })) {
+    return new NextResponse(null, { status: 413 });
+  }
   if (!request.auth && !PUBLIC_PATHS.has(pathname)) {
     return NextResponse.redirect(new URL("/login", request.nextUrl));
   }

@@ -41,6 +41,16 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // forbidden() -> 403 boundary for role-restricted screens (HR import).
+    authInterrupts: true,
+    serverActions: {
+      // HR import uploads files up to MAX_IMPORT_FILE_BYTES (10 MB, src/server/import/table.ts)
+      // through Server Actions; 1 MB extra covers the multipart overhead. Keep the two in step.
+      // proxy.ts (src/server/action-body-limit.ts) holds every other path to the 1 MB default.
+      bodySizeLimit: "11mb",
+    },
+  },
   turbopack: {
     rules: {
       "*.css": {
