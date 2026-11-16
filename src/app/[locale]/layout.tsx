@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { connection } from "next/server";
+import { type ReactNode, Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { LOCALES } from "@/i18n/config";
 import "../globals.css";
@@ -14,7 +16,7 @@ const gilroy = localFont({
   ],
 });
 
-// One static shell per language; proxy.ts picks the language from the cookie.
+// Both languages are known routes; proxy.ts picks the language from the cookie.
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
@@ -24,7 +26,19 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("appName"), description: t("metaDescription") };
 }
 
-export default async function RootLayout({ children }: LayoutProps<"/[locale]">) {
+// Nonce-based CSP (SEC-05, proxy.ts) needs every script tag rendered per request: a prerendered
+// shell has no nonce and the browser blocks it. Suspense around the whole document plus
+// connection() makes each route fully dynamic, so Next stamps the request nonce everywhere.
+export default function RootLayout({ children }: LayoutProps<"/[locale]">) {
+  return (
+    <Suspense>
+      <RootDocument>{children}</RootDocument>
+    </Suspense>
+  );
+}
+
+async function RootDocument({ children }: { children: ReactNode }) {
+  await connection();
   const locale = await getLocale();
   return (
     <html lang={locale} className={`${gilroy.variable} h-full antialiased`}>

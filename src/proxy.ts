@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/auth.config";
 import { LOCALE_COOKIE, localizedPath } from "@/i18n/config";
+import { buildCsp, CSP_HEADER, generateNonce } from "@/server/security-headers";
 
 // 1) Optimistic gate only: no valid session cookie -> /login. It also re-issues the cookie on
 //    activity (sliding idle timeout). The real decision (known, active, White Collar employee)
@@ -17,12 +18,25 @@ export default auth((request) => {
   if (!request.auth && !PUBLIC_PATHS.has(pathname)) {
     return NextResponse.redirect(new URL("/login", request.nextUrl));
   }
+
+  // Fresh nonce per request: Next reads it from the request's CSP header while rendering and
+  // stamps it on its own scripts and styles. The same CSP goes on the response for the browser.
+  const csp = buildCsp(generateNonce(), process.env.NODE_ENV === "development");
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(CSP_HEADER, csp);
+
   // API routes and files are still gated above, just not localized.
   const localized = localizedPath(pathname, request.cookies.get(LOCALE_COOKIE)?.value);
-  if (localized === null) return;
-  const target = request.nextUrl.clone();
-  target.pathname = localized;
-  return NextResponse.rewrite(target);
+  let response: NextResponse;
+  if (localized === null) {
+    response = NextResponse.next({ request: { headers: requestHeaders } });
+  } else {
+    const target = request.nextUrl.clone();
+    target.pathname = localized;
+    response = NextResponse.rewrite(target, { request: { headers: requestHeaders } });
+  }
+  response.headers.set(CSP_HEADER, csp);
+  return response;
 });
 
 export const config = {

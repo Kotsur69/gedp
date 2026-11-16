@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import packageJson from "./package.json" with { type: "json" };
+import { assertNoPublicSecrets } from "./src/env";
+import { CSP_HEADER, PATH_CSPS, STATIC_SECURITY_HEADERS } from "./src/server/security-headers";
+
+// SEC-06: NEXT_PUBLIC_ values are inlined into the browser bundle at build time, so a
+// secret-looking name fails here, before anything ships (runtime values are checked at start).
+assertNoPublicSecrets(process.env);
 
 // Glossary + PL/EN (NFR-01/02); locale resolution lives in src/i18n/request.ts.
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
@@ -22,6 +28,16 @@ const nextConfig: NextConfig = {
   env: {
     APP_VERSION: packageJson.version,
     APP_RELEASE_DATE: releaseDate(process.env.APP_RELEASE_DATE),
+  },
+  // SEC-06: never ship source maps to the browser (also the default; explicit so it stays off).
+  productionBrowserSourceMaps: false,
+  // Static security headers on every response, including assets the proxy skips.
+  // The nonce-based CSP is per request, so proxy.ts sets it.
+  async headers() {
+    return [
+      { source: "/:path*", headers: [...STATIC_SECURITY_HEADERS] },
+      ...PATH_CSPS.map(({ source, csp }) => ({ source, headers: [{ key: CSP_HEADER, value: csp }] })),
+    ];
   },
   cacheComponents: true,
   partialPrefetching: true,
