@@ -3,6 +3,7 @@ import { createTestDb, hasTestDb, insertPeople, resetTestDb } from "../../tests/
 import {
   computeClosure,
   findManagerCycle,
+  findManagerCycles,
   HIERARCHY_TX_OPTIONS,
   HierarchyCycleError,
   isDirectReport,
@@ -125,5 +126,16 @@ describe.skipIf(!hasTestDb)("hierarchy closure - database", () => {
     expect((await db.employee.findUniqueOrThrow({ where: { id: id("TSTTOP") } })).managerId).toBeNull();
     expect(await db.employeeHierarchy.count()).toBe(rowsBefore);
     expect(await isInSubtree(db, id("TSTTOP"), id("TSTA11"))).toBe(true);
+  });
+});
+
+describe("findManagerCycles", () => {
+  it("returns every disjoint loop, and none for a forest", () => {
+    const cycles = findManagerCycles([node(1, 2), node(2, 1), node(3, null), node(4, 5), node(5, 6), node(6, 4), node(7, 4)]);
+    expect(cycles.map((c) => c.map((n) => n.id))).toEqual([
+      [1, 2],
+      [4, 5, 6],
+    ]);
+    expect(findManagerCycles([node(1, null), node(2, 1)])).toEqual([]);
   });
 });

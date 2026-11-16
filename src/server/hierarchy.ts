@@ -37,19 +37,22 @@ const IN_PROGRESS = 1;
 const DONE = 2;
 
 /**
- * Returns the people forming a manager loop, in order, or null when the structure is a forest.
+ * Returns every manager loop, each listing its people in order; empty when the structure is a forest.
+ * Each person has one manager, so loops never share people. Runs in O(n).
  * A manager id that is not in `nodes` ends the chain (unknown managers are validated elsewhere).
  */
-export function findManagerCycle(nodes: readonly HierarchyNode[]): HierarchyNode[] | null {
+export function findManagerCycles(nodes: readonly HierarchyNode[]): HierarchyNode[][] {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const state = new Map<number, number>();
+  const cycles: HierarchyNode[][] = [];
 
   for (const start of nodes) {
     const path: HierarchyNode[] = [];
     let current: HierarchyNode | undefined = start;
     while (current && (state.get(current.id) ?? UNVISITED) !== DONE) {
       if (state.get(current.id) === IN_PROGRESS) {
-        return path.slice(path.indexOf(current));
+        cycles.push(path.slice(path.indexOf(current)));
+        break;
       }
       state.set(current.id, IN_PROGRESS);
       path.push(current);
@@ -57,7 +60,12 @@ export function findManagerCycle(nodes: readonly HierarchyNode[]): HierarchyNode
     }
     for (const visited of path) state.set(visited.id, DONE);
   }
-  return null;
+  return cycles;
+}
+
+/** The first manager loop (see findManagerCycles), or null when the structure is a forest. */
+export function findManagerCycle(nodes: readonly HierarchyNode[]): HierarchyNode[] | null {
+  return findManagerCycles(nodes)[0] ?? null;
 }
 
 /** Computes every closure row for the given structure. Throws HierarchyCycleError on a loop. */
@@ -102,6 +110,15 @@ export const HIERARCHY_TX_OPTIONS = {
   timeout: REBUILD_TX_TIMEOUT_MS,
 } as const;
 
+/**
+ * Takes the hierarchy advisory lock until the transaction ends. rebuildHierarchy takes it itself;
+ * call it earlier when a change is DECIDED from the current structure (e.g. a structure import
+ * plans before it writes), so no other structure change commits in between. Re-entrant.
+ */
+export async function lockHierarchy(tx: Pick<Prisma.TransactionClient, "$executeRaw">): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${REBUILD_LOCK_KEY})`;
+}
+
 export interface RebuildResult {
   employees: number;
   rows: number;
@@ -113,7 +130,7 @@ export interface RebuildResult {
  * until commit, and a HierarchyCycleError rolls the caller's change back.
  */
 export async function rebuildHierarchy(tx: HierarchyTx): Promise<RebuildResult> {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${REBUILD_LOCK_KEY})`;
+  await lockHierarchy(tx);
 
   const employees = await tx.employee.findMany({
     select: { id: true, managerId: true, amei: true, firstName: true, lastName: true },

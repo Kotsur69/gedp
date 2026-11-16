@@ -51,22 +51,24 @@ enum ImportKind {
 // ---------------------------------------------------------------------------
 
 model Employee {
-  id                  Int      @id @default(autoincrement())
-  amei                String   @unique
-  email               String   @unique
-  firstName           String   @map("first_name")
-  lastName            String   @map("last_name")
-  managerId           Int?     @map("manager_id")
+  id                  Int       @id @default(autoincrement())
+  amei                String    @unique
+  email               String    @unique
+  firstName           String    @map("first_name")
+  lastName            String    @map("last_name")
+  managerId           Int?      @map("manager_id")
   // WF-09: HR-designated validator for employees without a manager in the import.
-  validatorOverrideId Int?     @map("validator_override_id")
+  validatorOverrideId Int?      @map("validator_override_id")
   department          String?
   position            String?
   location            String?
-  isWhiteCollar       Boolean  @default(true) @map("is_white_collar")
-  isActive            Boolean  @default(true) @map("is_active")
-  isHrAdmin           Boolean  @default(false) @map("is_hr_admin")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  // HR-01 import column `data_zatrudnienia` (optional).
+  hireDate            DateTime? @map("hire_date") @db.Date
+  isWhiteCollar       Boolean   @default(true) @map("is_white_collar")
+  isActive            Boolean   @default(true) @map("is_active")
+  isHrAdmin           Boolean   @default(false) @map("is_hr_admin")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   manager           Employee?  @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
   directReports     Employee[] @relation("EmployeeManager")
