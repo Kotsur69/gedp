@@ -5,7 +5,8 @@ import { permissionsForEmployee } from "./permissions";
 import { TEST_ACCOUNTS, upsertTestLogins, type IssuedLogin } from "./test-logins";
 
 describe.skipIf(!hasTestDb)("password login + test accounts (database)", () => {
-  const db = createTestDb();
+  // skipIf still runs this body to collect tests, so only connect when a test DB exists.
+  const db = hasTestDb ? createTestDb() : null!;
   let logins: IssuedLogin[];
   const login = (email: string): IssuedLogin => {
     const found = logins.find((l) => l.email === email);

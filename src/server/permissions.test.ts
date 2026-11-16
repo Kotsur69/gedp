@@ -73,7 +73,8 @@ describe("access errors", () => {
 });
 
 describe.skipIf(!hasTestDb)("permissions - database", () => {
-  const db = createTestDb();
+  // skipIf still runs this body to collect tests, so only connect when a test DB exists.
+  const db = hasTestDb ? createTestDb() : null!;
   let ids: Map<string, number>;
   let docs: Map<string, number>;
   const id = (amei: string): number => {
