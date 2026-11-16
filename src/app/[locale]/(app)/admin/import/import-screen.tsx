@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { ImportCounts } from "@/server/import/pipeline";
 import { confirmStructureImport, previewStructureImport, type ImportActionErrorCode } from "./actions";
@@ -20,13 +20,18 @@ type Outcome = { kind: "imported"; counts: ImportCounts } | { kind: "rejected" }
  */
 type FailureCode = ImportActionErrorCode | "NETWORK";
 
-type ImportScreenProps = { maxFileBytes: number; maxFileMb: number };
+type ImportScreenProps = {
+  maxFileBytes: number;
+  maxFileMb: number;
+  /** File format instructions, rendered on the server (import-guide.tsx). */
+  guide: ReactNode;
+};
 
 const ACCEPT = ".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv";
 const SECONDARY_BUTTON =
   "h-11 cursor-pointer rounded-xl border border-line-strong bg-white px-5 font-semibold text-ink hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60";
 
-export function ImportScreen({ maxFileBytes, maxFileMb }: ImportScreenProps) {
+export function ImportScreen({ maxFileBytes, maxFileMb, guide }: ImportScreenProps) {
   const t = useTranslations("admin.import");
   const [isPending, startTransition] = useTransition();
   const [file, setFile] = useState<File | null>(null);
@@ -96,6 +101,7 @@ export function ImportScreen({ maxFileBytes, maxFileMb }: ImportScreenProps) {
       <h1 id="import-title" className="text-2xl font-semibold text-ink">
         {t("title")}
       </h1>
+      {guide}
 
       <form key={formKey} onSubmit={handleUpload} className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex flex-col gap-1">

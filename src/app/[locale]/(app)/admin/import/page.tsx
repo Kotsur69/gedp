@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { requireEmployee } from "@/server/current-employee";
 import { MAX_IMPORT_FILE_BYTES } from "@/server/import/table";
+import { ImportGuide } from "./import-guide";
 import { ImportScreen } from "./import-screen";
 
 // HR import of the employee structure (HR-01..03): upload -> preview diff -> confirm or reject.
@@ -38,7 +39,11 @@ async function GuardedImport() {
   };
   return (
     <NextIntlClientProvider messages={messages}>
-      <ImportScreen maxFileBytes={MAX_IMPORT_FILE_BYTES} maxFileMb={MAX_IMPORT_FILE_BYTES / BYTES_PER_MB} />
+      <ImportScreen
+        maxFileBytes={MAX_IMPORT_FILE_BYTES}
+        maxFileMb={MAX_IMPORT_FILE_BYTES / BYTES_PER_MB}
+        guide={<ImportGuide />}
+      />
     </NextIntlClientProvider>
   );
 }

@@ -353,6 +353,43 @@
         "MANAGER_REJECTED": "The manager's row has errors and is not imported",
         "HIERARCHY_CYCLE": "Loop in the manager structure",
         "UNKNOWN": "Unknown error"
+      },
+      "guide": {
+        "title": "How to prepare the file",
+        "intro": "The file is the complete, current list of employees. On confirm the app adds new people, updates changed ones and deactivates active people who are missing from the file (their documents are kept). Do not upload only new people - everyone else would be deactivated.",
+        "rulesTitle": "Rules",
+        "rules": {
+          "format": "Excel (.xlsx) - the first worksheet is used - or CSV in UTF-8 (in Excel: “Save as > CSV UTF-8”), separator ; or ,.",
+          "header": "Row 1 holds the column headers exactly as in the table below (case does not matter, any column order).",
+          "rows": "From row 2: one row per employee, at most {maxRows} rows. Empty rows are skipped.",
+          "self": "Include yourself as an active HR administrator (hr_admin = TAK) - otherwise the import is blocked.",
+          "booleans": "Enter yes/no fields as TAK (yes) or NIE (no).",
+          "dates": "Dates as an Excel date cell or as text in the format YYYY-MM-DD (e.g. 2019-03-01).",
+          "optional": "A missing optional column leaves that data unchanged. An empty cell in an existing column clears the value."
+        },
+        "columnsTitle": "Columns",
+        "columnHeader": "Column header",
+        "requiredHeader": "Required",
+        "descriptionHeader": "Content",
+        "required": "Yes",
+        "requiredColumnOnly": "Column yes, value may be empty",
+        "optional": "No",
+        "fields": {
+          "amei": "Employee AMEI number - unique in the file (letters and digits, 3-20 characters).",
+          "email": "Work e-mail address - unique.",
+          "firstName": "First name.",
+          "lastName": "Last name.",
+          "managerAmei": "Manager's AMEI (in the file or already in the app). Empty = top of the structure.",
+          "department": "Department.",
+          "position": "Position.",
+          "location": "Location.",
+          "isWhiteCollar": "TAK for White Collar employees (only they can sign in), NIE for everyone else.",
+          "isActive": "TAK = active, NIE = inactive.",
+          "hireDate": "Hire date.",
+          "isHrAdmin": "TAK grants HR administrator rights. Empty or missing column = NIE."
+        },
+        "exampleTitle": "Example",
+        "formatNote": "The file format is a proposal to be confirmed with HR; changing the headers does not require rebuilding the screen."
       }
     },
     "employeeFields": {

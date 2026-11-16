@@ -353,6 +353,43 @@
         "MANAGER_REJECTED": "Wiersz przełożonego zawiera błędy i nie zostanie zaimportowany",
         "HIERARCHY_CYCLE": "Pętla w strukturze przełożonych",
         "UNKNOWN": "Nieznany błąd"
+      },
+      "guide": {
+        "title": "Jak przygotować plik",
+        "intro": "Plik to pełna, aktualna lista pracowników. Po zatwierdzeniu aplikacja dodaje nowe osoby, aktualizuje zmienione i dezaktywuje aktywne osoby, których nie ma w pliku (ich dokumenty zostają). Nie wgrywaj samych nowych osób - wszyscy pozostali zostaliby dezaktywowani.",
+        "rulesTitle": "Zasady",
+        "rules": {
+          "format": "Excel (.xlsx) - liczy się pierwszy arkusz - albo CSV w kodowaniu UTF-8 (w Excelu: „Zapisz jako > CSV UTF-8”), separator ; lub ,.",
+          "header": "Wiersz 1 to nagłówki kolumn dokładnie jak w tabeli poniżej (wielkość liter nie ma znaczenia, kolejność kolumn dowolna).",
+          "rows": "Od wiersza 2: jeden wiersz na pracownika, maksymalnie {maxRows} wierszy. Puste wiersze są pomijane.",
+          "self": "Uwzględnij siebie jako aktywnego administratora HR (hr_admin = TAK) - inaczej import zostanie zablokowany.",
+          "booleans": "Pola tak/nie wpisuj jako TAK albo NIE.",
+          "dates": "Daty jako komórka daty w Excelu albo tekst w formacie RRRR-MM-DD (np. 2019-03-01).",
+          "optional": "Brak kolumny nieobowiązkowej = te dane pozostają bez zmian. Pusta komórka w istniejącej kolumnie czyści wartość."
+        },
+        "columnsTitle": "Kolumny",
+        "columnHeader": "Nagłówek kolumny",
+        "requiredHeader": "Obowiązkowa",
+        "descriptionHeader": "Zawartość",
+        "required": "Tak",
+        "requiredColumnOnly": "Kolumna tak, wartość może być pusta",
+        "optional": "Nie",
+        "fields": {
+          "amei": "Numer AMEI pracownika - unikalny w pliku (litery i cyfry, 3-20 znaków).",
+          "email": "Służbowy adres e-mail - unikalny.",
+          "firstName": "Imię.",
+          "lastName": "Nazwisko.",
+          "managerAmei": "AMEI przełożonego (z pliku albo już w aplikacji). Puste = szczyt struktury.",
+          "department": "Dział.",
+          "position": "Stanowisko.",
+          "location": "Lokalizacja.",
+          "isWhiteCollar": "TAK dla pracownika White Collar (tylko oni mogą się logować), NIE dla pozostałych.",
+          "isActive": "TAK = aktywny, NIE = nieaktywny.",
+          "hireDate": "Data zatrudnienia.",
+          "isHrAdmin": "TAK nadaje uprawnienia administratora HR. Pusta albo brak kolumny = NIE."
+        },
+        "exampleTitle": "Przykład",
+        "formatNote": "Format pliku jest propozycją do potwierdzenia z HR; zmiana nagłówków nie wymaga przebudowy ekranu."
       }
     },
     "employeeFields": {
