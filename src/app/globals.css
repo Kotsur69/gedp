@@ -1,44 +1,80 @@
 @import "tailwindcss";
 
 /*
- * ArcelorMittal brand layer, shared with AMSteel_Quote ("V6 Aurora" light theme): a pastel wash of
- * the AM gradient behind frosted white cards, gradient CTAs, Gilroy.
- * Gradient stops: Branding/paleta_kolorow.md. Text colours: AMSteel_Quote brand-theme.css.
- * Contrast: ink (#26142a) and ink-soft (#6f5d74) pass AA on white; accent (#b0236a) passes AA on
- * white. Light theme only for now (AMSteel's dark "Midnight" variant can be ported later).
+ * Theme = design tokens only. AM branding is not formally approved yet (Q-09), so it must stay
+ * swappable.
+ *
+ * Layer 1 - brand primitives (:root, below): the ONLY raw colour values in the app. Gradient stops
+ *   come from Branding/paleta_kolorow.md (sampled from AM_Graphic_Shapes_RGB_A4_4.png); logo orange
+ *   comes from AM_Logo_Primary_RGB.svg. Rebranding means replacing these few lines.
+ * Layer 2 - semantic tokens (@theme): every colour the UI uses, derived from the primitives with
+ *   color-mix() and exposed to Tailwind as utilities (text-ink, bg-canvas, border-line, ...).
+ * Components use layer 2 only. No hex values outside this file.
+ *
+ * Contrast (WCAG AA), measured on white / on the strongest background wash:
+ *   ink ~19:1, ink-soft 6.5:1 / 4.5:1, accent 6.9:1 / 4.8:1, danger 6.9:1 / 4.8:1, notice 9.3:1.
+ * Light theme only for now.
  */
 @theme {
-  --color-brand-purple: #7f1878;
-  --color-brand-magenta: #c12974;
-  --color-brand-coral: #e74341;
-  --color-brand-orange: #f58847;
-  --color-brand-logo: #ff3700;
+  --color-brand-purple: var(--am-purple);
+  --color-brand-magenta: var(--am-magenta);
+  --color-brand-coral: var(--am-coral);
+  --color-brand-orange: var(--am-orange);
+  --color-brand-logo: var(--am-logo-orange);
 
-  --color-accent: #b0236a;
-  --color-ink: #26142a;
-  --color-ink-soft: #6f5d74;
-  --color-line: rgb(127 24 120 / 0.15);
-  --color-line-strong: rgb(127 24 120 / 0.32);
-  --color-danger: #b42318;
+  /* Text */
+  --color-ink: color-mix(in oklab, var(--am-purple) 40%, var(--am-black));
+  --color-ink-soft: color-mix(in oklab, var(--color-ink) 62%, var(--am-white));
+  --color-on-brand: var(--am-white);
+  /* Links, active tab, focus ring. */
+  --color-accent: color-mix(in oklab, var(--am-magenta) 55%, var(--am-purple));
+  --color-danger: color-mix(in oklab, var(--am-coral) 78%, var(--am-black));
+  /* View-only notice (a cycle year that is not open). */
+  --color-notice: color-mix(in oklab, var(--am-orange) 55%, var(--am-black));
+  --color-notice-surface: color-mix(in oklab, var(--am-orange) 14%, var(--am-white));
+
+  /* Surfaces */
+  --color-canvas: color-mix(in oklab, var(--am-magenta) 4%, var(--am-white));
+  --color-wash-cool: color-mix(in oklab, var(--am-magenta) 25%, var(--am-white));
+  --color-wash-warm: color-mix(in oklab, var(--am-orange) 35%, var(--am-white));
+  --color-surface: var(--am-white);
+  --color-line: color-mix(in srgb, var(--am-purple) 15%, transparent);
+  --color-line-strong: color-mix(in srgb, var(--am-purple) 32%, transparent);
 
   --font-sans: var(--font-gilroy), -apple-system, "Segoe UI", sans-serif;
 
-  --shadow-card: 0 30px 70px -30px rgb(127 24 120 / 0.45);
-  --shadow-panel: 0 10px 30px -18px rgb(127 24 120 / 0.35);
+  --shadow-card: 0 30px 70px -30px color-mix(in srgb, var(--am-purple) 45%, transparent);
+  --shadow-panel: 0 10px 30px -18px color-mix(in srgb, var(--am-purple) 35%, transparent);
 }
 
 :root {
   color-scheme: light;
-  /* Used as `bg-(image:--am-gradient)` for primary CTAs and badges. */
-  --am-gradient: linear-gradient(110deg, #7f1878 0%, #c12974 35%, #e74341 68%, #f58847 100%);
+
+  /* Layer 1: brand primitives. */
+  --am-purple: #7f1878;
+  --am-magenta: #c12974;
+  --am-coral: #e74341;
+  --am-orange: #f58847;
+  --am-logo-orange: #ff3700;
+  --am-white: #ffffff;
+  --am-black: #000000;
+
+  /* Used as `bg-(image:--am-gradient)` for primary CTAs, the active tab and the header strip. */
+  --am-gradient: linear-gradient(
+    110deg,
+    var(--am-purple) 0%,
+    var(--am-magenta) 35%,
+    var(--am-coral) 68%,
+    var(--am-orange) 100%
+  );
 }
 
 body {
   color: var(--color-ink);
   background:
-    radial-gradient(700px 500px at 10% 10%, #f0c6e6 0%, transparent 60%),
-    radial-gradient(800px 600px at 95% 90%, #fdd0b8 0%, transparent 60%),
-    #fbf6f8;
+    radial-gradient(700px 500px at 10% 10%, var(--color-wash-cool) 0%, transparent 60%),
+    radial-gradient(800px 600px at 95% 90%, var(--color-wash-warm) 0%, transparent 60%),
+    var(--color-canvas);
   background-attachment: fixed;
 }
 
@@ -46,4 +82,12 @@ body {
 :where(a, button, select, input, textarea):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/* Tab strip on narrow screens scrolls sideways without a scrollbar taking vertical space. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

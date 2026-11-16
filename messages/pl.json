@@ -4,6 +4,7 @@
     "programName": "Global Employee Development Program",
     "metaDescription": "Global Employee Development Program – narzędzie do ustalania celów i planowania rozwoju",
     "footer": "© {year} · Global Employee Development Program",
+    "version": "Wersja {version} · wydanie z {date}",
     "loading": "Ładowanie…",
     "open": "Otwórz",
     "close": "Zamknij",
@@ -96,19 +97,29 @@
   },
   "header": {
     "cycleYear": "Rok cyklu",
-    "readOnlyYear": "Ten rok jest zamknięty – tylko podgląd",
+    "cycleOption": "{year} – {status}",
+    "viewOnly": {
+      "PRZYGOTOWANIE": "Cykl w przygotowaniu – tylko podgląd",
+      "ZAMKNIETY": "Cykl zamknięty – tylko podgląd"
+    },
+    "viewOnlyShort": "Tylko podgląd",
+    "yearChangeFailed": "Nie udało się zmienić roku. Spróbuj ponownie.",
     "hrContacts": "Lista kontaktów HR",
     "toolkit": "GEDP Toolkit",
-    "screen": "{app} – {screen}"
+    "opensInNewTab": "(otwiera się w nowej karcie)",
+    "screen": "{app} – {screen}",
+    "skipToContent": "Przejdź do treści"
   },
   "nav": {
+    "mainMenu": "Menu główne",
     "gedpCycle": "Cykl GEDP",
     "myInformation": "Moje informacje",
     "myTeam": "Mój zespół",
     "administrator": "Administrator",
     "helpAndSupport": "Pomoc i wsparcie",
     "home": "Strona główna",
-    "emptyTab": "Zawartość tej zakładki przygotowujemy razem z działem HR."
+    "emptyTab": "Zawartość tej zakładki przygotowujemy razem z działem HR.",
+    "comingSoon": "Ten ekran jest w przygotowaniu."
   },
   "home": {
     "greeting": "Witaj w panelu na rok {year}, {firstName}",

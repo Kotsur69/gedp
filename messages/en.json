@@ -4,6 +4,7 @@
     "programName": "Global Employee Development Program",
     "metaDescription": "Global Employee Development Program – a tool for setting goals and planning development",
     "footer": "© {year} · Global Employee Development Program",
+    "version": "Version {version} · released {date}",
     "loading": "Loading…",
     "open": "Open",
     "close": "Close",
@@ -96,19 +97,29 @@
   },
   "header": {
     "cycleYear": "Cycle year",
-    "readOnlyYear": "This year is closed – view only",
+    "cycleOption": "{year} – {status}",
+    "viewOnly": {
+      "PRZYGOTOWANIE": "Cycle in preparation – view only",
+      "ZAMKNIETY": "Closed cycle – view only"
+    },
+    "viewOnlyShort": "View only",
+    "yearChangeFailed": "The year could not be changed. Please try again.",
     "hrContacts": "HR contact list",
     "toolkit": "GEDP Toolkit",
-    "screen": "{app} – {screen}"
+    "opensInNewTab": "(opens in a new tab)",
+    "screen": "{app} – {screen}",
+    "skipToContent": "Skip to content"
   },
   "nav": {
+    "mainMenu": "Main menu",
     "gedpCycle": "GEDP cycle",
     "myInformation": "My information",
     "myTeam": "My team",
     "administrator": "Administrator",
     "helpAndSupport": "Help and support",
     "home": "Home",
-    "emptyTab": "We are preparing this tab together with HR."
+    "emptyTab": "We are preparing this tab together with HR.",
+    "comingSoon": "This screen is being prepared."
   },
   "home": {
     "greeting": "Welcome to your {year} dashboard, {firstName}",
