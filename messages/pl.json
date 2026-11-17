@@ -174,7 +174,16 @@
     "cancelConfirm": "Czy na pewno anulować ten cel? Pozostanie widoczny jako anulowany.",
     "unsavedChanges": "Masz niezapisane zmiany. Zamknąć bez zapisywania?",
     "readOnly": "Tylko podgląd",
-    "progressLabel": "Postęp"
+    "progressLabel": "Postęp",
+    "allParts": "Wszystkie części",
+    "totals": {
+      "drafts": "Szkice",
+      "addedToPlan": "Dodane do planu",
+      "changedByManager": "Zmienione przez N+1"
+    },
+    "sectionCounters": "Liczniki sekcji",
+    "noCycle": "Nie ma jeszcze żadnego cyklu GEDP.",
+    "viewOnlyNotice": "Ten rok jest tylko do podglądu."
   },
   "groupGoals": {
     "sectionTitle": "Wspólne cele i oczekiwania całej Grupy",
@@ -186,7 +195,22 @@
     "commitmentHint": "Opisz precyzyjnie i zwięźle cel BHP – co ma zostać osiągnięte",
     "commitmentRequired": "Wpisz swoje zobowiązanie BHP",
     "commitmentTooLong": "Zobowiązanie może mieć najwyżej {max} znaków",
-    "examplesIntro": "Możesz zainspirować się poniższymi przykładami"
+    "examplesIntro": "Możesz zainspirować się poniższymi przykładami",
+    "openGoal": "Otwórz: {title}",
+    "toAcknowledge": "Do potwierdzenia",
+    "commitmentEmpty": "Nie wpisano jeszcze zobowiązania. Otwórz kartę i opisz swój cel BHP.",
+    "characterCount": "{count} / {max} znaków",
+    "saving": "Zapisywanie…",
+    "saved": "Zapisano.",
+    "documentSent": "Dokument został wysłany – cele Grupy można tylko wyświetlić.",
+    "noTemplates": "Dział HR nie opublikował jeszcze celów Grupy na ten rok.",
+    "requiredMark": "(pole obowiązkowe)",
+    "actionErrors": {
+      "NOT_EDITABLE": "Tego celu nie można już zmienić – dokument został wysłany albo cykl jest zamknięty.",
+      "ALREADY_ACKNOWLEDGED": "Ten cel jest już potwierdzony.",
+      "FORBIDDEN": "Nie masz uprawnień do tej operacji.",
+      "FAILED": "Nie udało się zapisać. Spróbuj ponownie."
+    }
   },
   "performanceGoals": {
     "empty": "Nie masz jeszcze celów wydajnościowych. Dodaj pierwszy cel albo skopiuj cele z poprzedniego roku.",

@@ -174,7 +174,16 @@
     "cancelConfirm": "Cancel this goal? It will stay visible as cancelled.",
     "unsavedChanges": "You have unsaved changes. Close without saving?",
     "readOnly": "View only",
-    "progressLabel": "Progress"
+    "progressLabel": "Progress",
+    "allParts": "All parts",
+    "totals": {
+      "drafts": "Drafts",
+      "addedToPlan": "Added to plan",
+      "changedByManager": "Changed by N+1"
+    },
+    "sectionCounters": "Section counters",
+    "noCycle": "There is no GEDP cycle yet.",
+    "viewOnlyNotice": "This year is view only."
   },
   "groupGoals": {
     "sectionTitle": "Common goals and expectations for the whole Group",
@@ -186,7 +195,22 @@
     "commitmentHint": "Describe in a precise and concise manner the health and safety objective – what has to be achieved",
     "commitmentRequired": "Enter your health and safety commitment",
     "commitmentTooLong": "The commitment can have at most {max} characters",
-    "examplesIntro": "Feel free to take inspiration from the following examples"
+    "examplesIntro": "Feel free to take inspiration from the following examples",
+    "openGoal": "Open: {title}",
+    "toAcknowledge": "To acknowledge",
+    "commitmentEmpty": "No commitment yet. Open the card and describe your health and safety goal.",
+    "characterCount": "{count} / {max} characters",
+    "saving": "Saving…",
+    "saved": "Saved.",
+    "documentSent": "The document has been sent – Group goals can only be viewed.",
+    "noTemplates": "HR has not published the Group goals for this year yet.",
+    "requiredMark": "(required)",
+    "actionErrors": {
+      "NOT_EDITABLE": "This goal can no longer be changed – the document was sent or the cycle is closed.",
+      "ALREADY_ACKNOWLEDGED": "This goal is already acknowledged.",
+      "FORBIDDEN": "You are not allowed to do this.",
+      "FAILED": "Saving failed. Please try again."
+    }
   },
   "performanceGoals": {
     "empty": "You have no performance goals yet. Add your first goal or copy last year's goals.",
