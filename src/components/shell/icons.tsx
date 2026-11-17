@@ -75,3 +75,37 @@ export function PencilIcon({ className = "size-4" }: IconProps) {
     </svg>
   );
 }
+
+export function ChevronLeftIcon({ className = "size-5" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ className = "size-5" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+export function InfoIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4M12 8h.01" />
+    </svg>
+  );
+}
+
+export function DocumentIcon({ className = "size-6" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+      <path d="M14 2v4a2 2 0 0 0 2 2h4M9 13h6M9 17h4" />
+    </svg>
+  );
+}

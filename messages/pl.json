@@ -122,13 +122,13 @@
     "comingSoon": "Ten ekran jest w przygotowaniu."
   },
   "home": {
-    "greeting": "Witaj w panelu na rok {year}, {firstName}",
+    "greeting": "Witaj w panelu na rok <highlight>{year}</highlight>, {firstName}",
     "greetingShort": "Witaj, {firstName}",
-    "placeholder": "Tu pojawią się Twoje cele Grupy, cele wydajnościowe i rozwojowe oraz dokumenty do zatwierdzenia.",
     "tiles": {
       "goalCentre": "Centrum celów",
       "document": "Dokument",
-      "documentStatus": "Status: {status}"
+      "documentStatus": "Status: {status}",
+      "documentNotStarted": "Nie rozpoczęto"
     },
     "myTasks": "Moje zadania",
     "noTasks": "Nie masz teraz żadnych zadań.",
@@ -147,6 +147,18 @@
     "statisticsFilters": {
       "documents": "Dokumenty {year}",
       "goalCentre": "Centrum celów {year}"
+    },
+    "yearInfoLabel": "Informacja o roku",
+    "yearInfo": "To rok cyklu GEDP wybrany w nagłówku. Zmień go selektorem roku, aby zobaczyć cele i dokument z innego roku.",
+    "intro": {
+      "label": "Tekst wprowadzający",
+      "expand": "Rozwiń tekst wprowadzający",
+      "collapse": "Zwiń tekst wprowadzający"
+    },
+    "carousel": {
+      "previous": "Poprzednie zadanie",
+      "next": "Następne zadanie",
+      "slide": "Zadanie {index} z {total}"
     }
   },
   "goalCentre": {

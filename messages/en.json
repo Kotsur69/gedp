@@ -122,13 +122,13 @@
     "comingSoon": "This screen is being prepared."
   },
   "home": {
-    "greeting": "Welcome to your {year} dashboard, {firstName}",
+    "greeting": "Welcome to your <highlight>{year}</highlight> dashboard, {firstName}",
     "greetingShort": "Welcome, {firstName}",
-    "placeholder": "Your Group goals, performance and development goals, and documents to approve will appear here.",
     "tiles": {
       "goalCentre": "Goal Centre",
       "document": "Document",
-      "documentStatus": "Status: {status}"
+      "documentStatus": "Status: {status}",
+      "documentNotStarted": "Not started"
     },
     "myTasks": "My tasks",
     "noTasks": "You have no tasks right now.",
@@ -147,6 +147,18 @@
     "statisticsFilters": {
       "documents": "{year} documents",
       "goalCentre": "{year} Goal Centre"
+    },
+    "yearInfoLabel": "About the year",
+    "yearInfo": "This is the GEDP cycle year chosen in the header. Change it with the year selector to see the goals and document of another year.",
+    "intro": {
+      "label": "Introduction",
+      "expand": "Expand the introduction",
+      "collapse": "Collapse the introduction"
+    },
+    "carousel": {
+      "previous": "Previous task",
+      "next": "Next task",
+      "slide": "Task {index} of {total}"
     }
   },
   "goalCentre": {

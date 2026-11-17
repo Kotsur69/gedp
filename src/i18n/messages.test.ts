@@ -66,10 +66,20 @@ describe("glossary / messages (NFR-01, NFR-02)", () => {
         messages: CATALOGS[locale],
         onError: (error: IntlError) => errors.push(error.message),
       });
+      // Keys are checked dynamically here; the typed API is exercised by the pages.
+      const format = t as unknown as ((key: string, values: Record<string, number>) => string) & {
+        markup: (key: string, values: Record<string, number | ((chunks: string) => string)>) => string;
+      };
       for (const [key, text] of flat[locale]) {
         const values = Object.fromEntries(argumentsOf(text).map((name) => [name, 2]));
-        // Keys are checked dynamically here; the typed API is exercised by the pages.
-        (t as unknown as (key: string, values: Record<string, number>) => string)(key, values);
+        const tags = tagsOf(text);
+        if (tags.length === 0) {
+          format(key, values);
+        } else {
+          // Rich-text messages are rendered with tag functions (t.rich / t.markup), never plain t().
+          const tagValues = Object.fromEntries(tags.map((tag) => [tag, (chunks: string) => chunks]));
+          format.markup(key, { ...values, ...tagValues });
+        }
       }
       expect(errors, `ICU errors in ${locale}.json`).toEqual([]);
     }
