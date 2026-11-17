@@ -3,7 +3,7 @@ import type { Locale } from "@/i18n/config";
 // NFR-06: exactly one date format per language (eGEDP mixed four).
 //   pl: 31.12.2026      en: 31 Dec 2026
 // English uses the en-GB conventions (day first), which suit a European company.
-const INTL_LOCALE: Readonly<Record<Locale, string>> = { pl: "pl-PL", en: "en-GB" };
+export const INTL_LOCALE: Readonly<Record<Locale, string>> = { pl: "pl-PL", en: "en-GB" };
 
 const DATE_OPTIONS: Readonly<Record<Locale, Intl.DateTimeFormatOptions>> = {
   pl: { day: "2-digit", month: "2-digit", year: "numeric" },

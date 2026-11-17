@@ -127,6 +127,23 @@ export function PlusIcon({ className = "size-6" }: IconProps) {
   );
 }
 
+export function CopyIcon({ className = "size-6" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <rect width="13" height="13" x="9" y="9" rx="2" />
+      <path d="M5 15a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2" />
+    </svg>
+  );
+}
+
+export function ChevronUpIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  );
+}
+
 export function TrashIcon({ className = "size-4" }: IconProps) {
   return (
     <svg {...BASE} className={className}>

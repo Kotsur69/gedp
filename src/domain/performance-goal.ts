@@ -347,3 +347,25 @@ export function performanceGoalCounters(goals: readonly CountableGoal[]): Perfor
     totalWeightInPlan: inPlan.reduce((sum, goal) => sum + (goal.weight ?? 0), 0),
   };
 }
+
+export interface WeightedGoal {
+  id: number;
+  state: PerformanceGoalState;
+  weight: number | null;
+}
+
+/**
+ * Live total shown in the form (G2-23): the weight of every other goal in the plan plus the weight
+ * being typed for this goal (`goalId` null for a new goal). A weight that is not a whole number
+ * 1-100 adds nothing, so the total never shows a value the server would refuse.
+ */
+export function planWeightWithGoal(goals: readonly WeightedGoal[], goalId: number | null, weight: number | null): number {
+  const others = goals
+    .filter((goal) => goal.id !== goalId && goal.state === "W_PLANIE")
+    .reduce((sum, goal) => sum + (goal.weight ?? 0), 0);
+  const isValid = weight !== null && Number.isInteger(weight) && weight >= GOAL_WEIGHT_MIN && weight <= GOAL_WEIGHT_MAX;
+  return others + (isValid ? weight : 0);
+}
+
+/** G2-26: the plan is complete at exactly 100%. */
+export const PLAN_WEIGHT_TARGET = 100;

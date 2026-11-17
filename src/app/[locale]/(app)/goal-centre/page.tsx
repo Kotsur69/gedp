@@ -5,12 +5,14 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ChevronRightIcon } from "@/components/shell/icons";
 import { developmentGoalCounters } from "@/domain/development-goal";
+import { performanceGoalCounters } from "@/domain/performance-goal";
 import type { Locale } from "@/i18n/config";
 import { formatDate } from "@/i18n/format";
 import { requireEmployee } from "@/server/current-employee";
 import { getSelectedCycle } from "@/server/cycles";
 import { db } from "@/server/db";
 import { loadDevelopmentGoals } from "@/server/development-goals";
+import { loadPerformanceGoals } from "@/server/performance-goals";
 import {
   aggregateCounters,
   BHP_COMMITMENT_MAX_LENGTH,
@@ -21,13 +23,14 @@ import {
   type GroupGoalView,
   type SectionCounters,
 } from "@/server/group-goals";
-import { CounterRings, Notice, Panel, SectionChips } from "./goal-centre-ui";
+import { CounterRings, Notice, Panel, SectionChips, type SectionChip } from "./goal-centre-ui";
 import { GroupGoalCards, type GroupGoalCardData } from "./group-goal-cards";
 
 // Goal Centre ("Centrum celów", G1-01..12, WF-23) for the cycle year picked in the header.
 // The person's own document is created as SZKIC on first open of an open cycle. Part 1 (Group
-// goals) lives here; Part 3 (development goals) has its own screen, /goal-centre/development,
-// linked from its summary below. Every part passes its counters to the top bar.
+// goals) lives here; Parts 2 and 3 (performance and development goals) have their own screens,
+// /goal-centre/performance and /goal-centre/development, linked from their summaries below.
+// Every part passes its counters to the top bar.
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
@@ -72,7 +75,7 @@ async function GoalCentre() {
   }
 
   const document = await ensureOwnDocument(db(), viewer, cycle);
-  const [part1, part3] = await Promise.all([
+  const [part1, part2, part3] = await Promise.all([
     document
       ? loadGroupGoals(db(), viewer, document.id, cycle.status)
       : loadGroupGoalTemplates(db(), cycle.id).then((goals) => ({
@@ -81,18 +84,26 @@ async function GoalCentre() {
           canChange: false,
           goals,
         })),
+    document ? loadPerformanceGoals(db(), viewer, document.id, cycle.status) : null,
     document ? loadDevelopmentGoals(db(), viewer, document.id, cycle.status) : null,
   ]);
 
   const groupCounters = groupGoalCounters(part1.goals);
+  const performanceCounters = part2?.counters ?? performanceGoalCounters([]);
   const developmentCounters = part3?.counters ?? developmentGoalCounters([]);
-  // Part 3 "Dodane do planu" feeds the top bar's "done" (see SectionCounters).
+  // Parts 2 and 3: "Nie dodane do planu" counts as a draft, "Dodane do planu" feeds the top bar's
+  // "done" (see SectionCounters).
+  const performanceSection: SectionCounters = {
+    drafts: performanceCounters.notInPlan,
+    done: performanceCounters.inPlan,
+    changedByManager: performanceCounters.changedByManager,
+  };
   const developmentSection: SectionCounters = {
     drafts: developmentCounters.drafts,
     done: developmentCounters.inPlan,
     changedByManager: developmentCounters.changedByManager,
   };
-  const totals = aggregateCounters([groupCounters, developmentSection]);
+  const totals = aggregateCounters([groupCounters, performanceSection, developmentSection]);
   const isReadOnly = cycle.status !== "OTWARTY";
   const isSent = part1.status !== null && !isReadOnly && !part1.canChange;
 
@@ -171,44 +182,85 @@ async function GoalCentre() {
         </div>
       </Panel>
 
-      <Panel labelledBy="development-goals-title">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 id="development-goals-title" className="text-2xl font-semibold text-ink">
-              {t("developmentGoals.sectionTitle")}
-            </h2>
-            <SectionChips
-              label={t("goalCentre.sectionCounters")}
-              chips={[
-                { key: "drafts", text: t("goalCentre.counters.drafts", { count: developmentCounters.drafts }) },
-                {
-                  key: "addedToPlan",
-                  text: t("goalCentre.counters.addedToPlan", { count: developmentCounters.inPlan }),
-                },
-                {
-                  key: "changedByManager",
-                  text: t("goalCentre.counters.changedByManager", { count: developmentCounters.changedByManager }),
-                },
-                {
-                  key: "cancelled",
-                  text: t("goalCentre.counters.cancelled", { count: developmentCounters.cancelled }),
-                  hasCheck: false,
-                },
-              ]}
-            />
-            <p className="mt-4 max-w-3xl leading-relaxed text-ink-soft">{t("developmentGoals.intro.purpose")}</p>
-          </div>
-          <Link
-            href="/goal-centre/development"
-            aria-describedby="development-goals-title"
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-xl bg-(image:--am-gradient) px-5 font-semibold tracking-[0.04em] text-on-brand transition-opacity duration-200 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:self-end"
-          >
-            {t("goalCentre.openPart")}
-            <ChevronRightIcon className="size-4" />
-          </Link>
-        </div>
-      </Panel>
+      <PartSummary
+        titleId="performance-goals-title"
+        title={t("performanceGoals.sectionTitle")}
+        href="/goal-centre/performance"
+        linkLabel={t("goalCentre.openPart")}
+        intro={t("performanceGoals.intro.purpose")}
+        chipsLabel={t("goalCentre.sectionCounters")}
+        chips={[
+          { key: "notInPlan", text: t("goalCentre.counters.notInPlan", { count: performanceCounters.notInPlan }) },
+          { key: "addedToPlan", text: t("goalCentre.counters.addedToPlan", { count: performanceCounters.inPlan }) },
+          {
+            key: "changedByManager",
+            text: t("goalCentre.counters.changedByManager", { count: performanceCounters.changedByManager }),
+          },
+          {
+            key: "totalWeight",
+            text: t("goalCentre.counters.totalWeight", { weight: performanceCounters.totalWeightInPlan }),
+            hasCheck: false,
+          },
+        ]}
+      />
+
+      <PartSummary
+        titleId="development-goals-title"
+        title={t("developmentGoals.sectionTitle")}
+        href="/goal-centre/development"
+        linkLabel={t("goalCentre.openPart")}
+        intro={t("developmentGoals.intro.purpose")}
+        chipsLabel={t("goalCentre.sectionCounters")}
+        chips={[
+          { key: "drafts", text: t("goalCentre.counters.drafts", { count: developmentCounters.drafts }) },
+          { key: "addedToPlan", text: t("goalCentre.counters.addedToPlan", { count: developmentCounters.inPlan }) },
+          {
+            key: "changedByManager",
+            text: t("goalCentre.counters.changedByManager", { count: developmentCounters.changedByManager }),
+          },
+          {
+            key: "cancelled",
+            text: t("goalCentre.counters.cancelled", { count: developmentCounters.cancelled }),
+            hasCheck: false,
+          },
+        ]}
+      />
     </div>
+  );
+}
+
+type PartSummaryProps = {
+  titleId: string;
+  title: string;
+  href: string;
+  linkLabel: string;
+  intro: string;
+  chipsLabel: string;
+  chips: readonly SectionChip[];
+};
+
+/** A part with its own screen: title, counters, first intro sentence and the link to the screen. */
+function PartSummary({ titleId, title, href, linkLabel, intro, chipsLabel, chips }: PartSummaryProps) {
+  return (
+    <Panel labelledBy={titleId}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 id={titleId} className="text-2xl font-semibold text-ink">
+            {title}
+          </h2>
+          <SectionChips label={chipsLabel} chips={chips} />
+          <p className="mt-4 max-w-3xl leading-relaxed text-ink-soft">{intro}</p>
+        </div>
+        <Link
+          href={href}
+          aria-describedby={titleId}
+          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-xl bg-(image:--am-gradient) px-5 font-semibold tracking-[0.04em] text-on-brand transition-opacity duration-200 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:self-end"
+        >
+          {linkLabel}
+          <ChevronRightIcon className="size-4" />
+        </Link>
+      </div>
+    </Panel>
   );
 }
 

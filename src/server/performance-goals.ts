@@ -61,7 +61,8 @@ export type GoalStateErrorCode =
   | "DOCUMENT_ALREADY_SENT"
   | "DOCUMENT_NOT_SENT"
   | "TOO_MANY_GOALS"
-  | "DEFAULT_TARGET_TYPE_MISSING";
+  | "DEFAULT_TARGET_TYPE_MISSING"
+  | "NOTHING_TO_COPY";
 
 export type PerformanceGoalErrorCode = GoalInputErrorCode | GoalStateErrorCode;
 
@@ -76,6 +77,7 @@ const STATE_ERROR_CODES: ReadonlySet<PerformanceGoalErrorCode> = new Set<GoalSta
   "DOCUMENT_NOT_SENT",
   "TOO_MANY_GOALS",
   "DEFAULT_TARGET_TYPE_MISSING",
+  "NOTHING_TO_COPY",
 ]);
 
 export class PerformanceGoalError extends Error {
@@ -135,7 +137,7 @@ export interface PerformanceGoalView {
   changedByManager: boolean;
 }
 
-const goalSelect = {
+export const goalSelect = {
   id: true,
   documentId: true,
   title: true,
@@ -151,9 +153,9 @@ const goalSelect = {
   targetType: { select: { code: true } },
 } satisfies Prisma.PerformanceGoalSelect;
 
-type GoalRow = Prisma.PerformanceGoalGetPayload<{ select: typeof goalSelect }>;
+export type GoalRow = Prisma.PerformanceGoalGetPayload<{ select: typeof goalSelect }>;
 
-function toView(row: GoalRow): PerformanceGoalView {
+export function toView(row: GoalRow): PerformanceGoalView {
   return {
     id: row.id,
     documentId: row.documentId,
@@ -199,7 +201,7 @@ function snapshot(goal: GoalSnapshot): GoalSnapshot {
 }
 
 /** before / after of an audit row: the same shape for every action. */
-const auditRecord = (goal: PerformanceGoalView) => ({ documentId: goal.documentId, ...snapshot(goal) });
+export const auditRecord = (goal: PerformanceGoalView) => ({ documentId: goal.documentId, ...snapshot(goal) });
 
 const stateFor = (mode: GoalSaveMode): PerformanceGoalState => (mode === "PLAN" ? "W_PLANIE" : "SZKIC");
 
@@ -240,13 +242,17 @@ export async function loadPerformanceGoals(
   };
 }
 
-/** Form context for a document: cycle year and selectable target types (same data the server uses). */
+/**
+ * Form context for a document: cycle year and selectable target types (same data the server uses).
+ * `keepTypeIds`: types the document's goals already use, kept even if HR has deactivated them.
+ */
 export async function loadGoalFormContext(
   db: Pick<PrismaClient, "targetType">,
   cycleYear: number,
+  keepTypeIds: readonly number[] = [],
 ): Promise<PerformanceGoalContext> {
   const targetTypes = await db.targetType.findMany({
-    where: { isActive: true },
+    where: { OR: [{ isActive: true }, { code: DEFAULT_TARGET_TYPE_CODE }, { id: { in: [...keepTypeIds] } }] },
     select: { id: true, code: true, isNumeric: true },
     orderBy: { id: "asc" },
   });
