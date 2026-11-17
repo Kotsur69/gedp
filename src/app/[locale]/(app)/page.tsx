@@ -3,12 +3,14 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { CollapsibleIntro } from "@/components/home/collapsible-intro";
 import { HomeTiles } from "@/components/home/home-tiles";
 import { IntroMarkdown } from "@/components/home/intro-markdown";
+import { StartAnnouncement } from "@/components/home/start-announcement";
 import { TaskCarousel, type TaskCardData } from "@/components/home/task-carousel";
 import { screenMetadata } from "@/components/shell/empty-tab";
 import { InfoIcon } from "@/components/shell/icons";
 import type { Locale } from "@/i18n/config";
 import { formatDate } from "@/i18n/format";
 import { requireEmployee } from "@/server/current-employee";
+import { loadUnseenStartAnnouncement } from "@/server/content";
 import { getSelectedCycle } from "@/server/cycles";
 import { db } from "@/server/db";
 import { buildHomeTasks, loadOwnDocumentSummary, loadPublishedContent, type HomeTask } from "@/server/home";
@@ -17,7 +19,7 @@ export function generateMetadata() {
   return screenMetadata("gedpCycle");
 }
 
-// "Cykl GEDP" tab, the start page (HOME-10, 11, 13, 14). Per-person data, so it renders
+// "Cykl GEDP" tab, the start page (HOME-01, 10, 11, 13, 14). Per-person data, so it renders
 // dynamically inside Suspense (cacheComponents). Statistics (HOME-15) come with file 07.
 export default async function Home() {
   const t = await getTranslations("common");
@@ -35,14 +37,28 @@ async function Dashboard() {
     getLocale(),
     getTranslations(),
   ]);
-  const [intro, document] = await Promise.all([
+  const [intro, announcement, document] = await Promise.all([
     loadPublishedContent(db(), "TEKST_POWITALNY", locale),
+    loadUnseenStartAnnouncement(db(), employee.id, locale),
     cycle ? loadOwnDocumentSummary(db(), employee.id, cycle.year) : null,
   ]);
   const tasks = await toTaskCards(buildHomeTasks({ cycle, document }), cycle?.year ?? null, locale);
 
   return (
     <div className="flex flex-col gap-6">
+      {announcement && (
+        <StartAnnouncement
+          key={announcement.version}
+          version={announcement.version}
+          labels={{
+            title: t("home.announcement.title"),
+            close: t("common.close"),
+            acknowledge: t("home.announcement.acknowledge"),
+          }}
+        >
+          <IntroMarkdown markdown={announcement.markdown} newTabLabel={t("header.opensInNewTab")} headings />
+        </StartAnnouncement>
+      )}
       <Panel labelledBy="greeting">
         {/* The plain-text aria-label keeps the info button's name out of the heading's name. */}
         <h1

@@ -150,6 +150,10 @@
     },
     "yearInfoLabel": "About the year",
     "yearInfo": "This is the GEDP cycle year chosen in the header. Change it with the year selector to see the goals and document of another year.",
+    "announcement": {
+      "title": "Announcement",
+      "acknowledge": "Got it"
+    },
     "intro": {
       "label": "Introduction",
       "expand": "Expand the introduction",

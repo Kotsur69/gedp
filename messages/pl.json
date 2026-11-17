@@ -150,6 +150,10 @@
     },
     "yearInfoLabel": "Informacja o roku",
     "yearInfo": "To rok cyklu GEDP wybrany w nagłówku. Zmień go selektorem roku, aby zobaczyć cele i dokument z innego roku.",
+    "announcement": {
+      "title": "Komunikat",
+      "acknowledge": "Rozumiem"
+    },
     "intro": {
       "label": "Tekst wprowadzający",
       "expand": "Rozwiń tekst wprowadzający",

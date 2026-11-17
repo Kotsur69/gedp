@@ -5,8 +5,8 @@ import { IntroMarkdown, safeIntroUrl } from "./intro-markdown";
 // HOME-11: the intro text is HR-edited markdown, so the rendered HTML must never carry script,
 // raw HTML or unsafe URLs, whatever react-markdown version is installed.
 
-function render(markdown: string): string {
-  return renderToStaticMarkup(<IntroMarkdown markdown={markdown} newTabLabel="(new tab)" />);
+function render(markdown: string, headings = false): string {
+  return renderToStaticMarkup(<IntroMarkdown markdown={markdown} newTabLabel="(new tab)" headings={headings} />);
 }
 
 const HOSTILE_INPUTS = [
@@ -26,14 +26,18 @@ const HOSTILE_INPUTS = [
 describe("IntroMarkdown", () => {
   // A rejected URL may still show up as visible text (e.g. an autolink becomes a <span>); what
   // matters is that no attribute carries it and no executable element or handler is emitted.
-  it.each(HOSTILE_INPUTS)("neutralises %j", (markdown) => {
-    const html = render(markdown).toLowerCase();
-    expect(html).not.toMatch(/\s(href|src)="(?!https?:\/\/|mailto:)/);
-    expect(html).not.toMatch(/\son\w+=/);
-    for (const tag of ["<script", "<img", "<iframe"]) {
-      expect(html).not.toContain(tag);
-    }
-  });
+  // Both modes: the start announcement (headings on) is held to the same rules as the intro.
+  it.each(HOSTILE_INPUTS.flatMap((markdown) => [[markdown, false] as const, [markdown, true] as const]))(
+    "neutralises %j (headings: %s)",
+    (markdown, headings) => {
+      const html = render(markdown, headings).toLowerCase();
+      expect(html).not.toMatch(/\s(href|src)="(?!https?:\/\/|mailto:)/);
+      expect(html).not.toMatch(/\son\w+=/);
+      for (const tag of ["<script", "<img", "<iframe"]) {
+        expect(html).not.toContain(tag);
+      }
+    },
+  );
 
   it("keeps safe links, opening them in a new tab without opener access", () => {
     const html = render("See [GEDP Toolkit](https://example.com/toolkit).");
@@ -49,6 +53,25 @@ describe("IntroMarkdown", () => {
     expect(html).toContain("<strong>one</strong>");
     expect(html).not.toContain("<h1");
     expect(html).toContain("Title");
+  });
+});
+
+describe("IntroMarkdown with headings (start announcement)", () => {
+  it("keeps headings, demoted under the dialog title, with lists and bold", () => {
+    const html = render("# Release\n\n## Goal Centre\n\n### Detail\n\n- **one**\n- two", true);
+    expect(html).toContain("<h3");
+    expect(html).toContain(">Release</h3>");
+    expect(html).toContain(">Goal Centre</h3>");
+    expect(html).toContain(">Detail</h4>");
+    expect(html).not.toMatch(/<h[12]/);
+    expect(html).toContain("<ul>");
+    expect(html).toContain("<strong>one</strong>");
+  });
+
+  it("drops raw HTML headings instead of parsing them", () => {
+    const html = render("<h1 onclick=alert(1)>x</h1>", true).toLowerCase();
+    expect(html).not.toContain("<h1");
+    expect(html).not.toMatch(/\son\w+=/);
   });
 });
 

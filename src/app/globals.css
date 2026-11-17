@@ -69,6 +69,11 @@
   );
 }
 
+/* A modal <dialog> does not stop the page behind it from scrolling; this does, for every dialog. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
 body {
   color: var(--color-ink);
   background:

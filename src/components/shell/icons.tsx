@@ -22,6 +22,15 @@ export function ChevronDownIcon({ className = "size-4" }: IconProps) {
   );
 }
 
+export function CloseIcon({ className = "size-5" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}
+
 export function ExternalLinkIcon({ className = "size-3.5" }: IconProps) {
   return (
     <svg {...BASE} className={className}>

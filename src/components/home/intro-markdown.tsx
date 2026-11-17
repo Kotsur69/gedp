@@ -1,12 +1,16 @@
+import type { ReactNode } from "react";
 import Markdown, { type Components } from "react-markdown";
 import { ExternalLinkIcon } from "@/components/shell/icons";
 
-// HOME-11: HR-edited intro text, rendered on the server. The text is untrusted input, so:
+// HR-edited markdown (HOME-11 intro text, HOME-01 start announcement), rendered on the server.
+// The text is untrusted input, so:
 // - raw HTML is dropped (skipHtml), never parsed;
-// - only basic prose elements survive; anything else (images, headings, tables) is unwrapped to text;
+// - only basic prose elements survive (plus headings when `headings` is set); anything else
+//   (images, tables, headings by default) is unwrapped to text;
 // - links keep only http(s) and mailto targets, others lose their href and render as plain text.
 
 const ALLOWED_ELEMENTS = ["p", "br", "strong", "em", "ul", "ol", "li", "a", "blockquote"];
+const HEADING_ELEMENTS = ["h1", "h2", "h3", "h4", "h5", "h6"];
 const SAFE_URL = /^(https?:\/\/|mailto:)/i;
 
 /** Returns the URL when its scheme is allowed, otherwise an empty string (link becomes text). */
@@ -19,10 +23,29 @@ interface IntroMarkdownProps {
   markdown: string;
   /** Screen-reader suffix for links that open in a new tab. */
   newTabLabel: string;
+  /**
+   * Keep HR headings, demoted to h3 (`#`, `##`) and h4 (deeper) so they nest under the h2 title of
+   * the surrounding dialog or section.
+   */
+  headings?: boolean;
 }
 
-export function IntroMarkdown({ markdown, newTabLabel }: IntroMarkdownProps) {
+function Heading3({ children }: { children?: ReactNode }) {
+  return <h3 className="text-lg font-semibold text-ink">{children}</h3>;
+}
+
+function Heading4({ children }: { children?: ReactNode }) {
+  return <h4 className="font-semibold text-ink">{children}</h4>;
+}
+
+export function IntroMarkdown({ markdown, newTabLabel, headings = false }: IntroMarkdownProps) {
   const components: Components = {
+    h1: Heading3,
+    h2: Heading3,
+    h3: Heading4,
+    h4: Heading4,
+    h5: Heading4,
+    h6: Heading4,
     a: ({ href, children }) =>
       href ? (
         <a
@@ -44,7 +67,7 @@ export function IntroMarkdown({ markdown, newTabLabel }: IntroMarkdownProps) {
     <div className="max-w-3xl leading-relaxed text-ink-soft [&_blockquote]:border-l-2 [&_blockquote]:border-line-strong [&_blockquote]:pl-4 [&_li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_strong]:text-ink [&_ul]:list-disc [&_ul]:pl-5 [&>*+*]:mt-3">
       <Markdown
         skipHtml
-        allowedElements={ALLOWED_ELEMENTS}
+        allowedElements={headings ? [...ALLOWED_ELEMENTS, ...HEADING_ELEMENTS] : ALLOWED_ELEMENTS}
         unwrapDisallowed
         urlTransform={safeIntroUrl}
         components={components}
