@@ -199,7 +199,16 @@
     },
     "sectionCounters": "Liczniki sekcji",
     "noCycle": "Nie ma jeszcze żadnego cyklu GEDP.",
-    "viewOnlyNotice": "Ten rok jest tylko do podglądu."
+    "viewOnlyNotice": "Ten rok jest tylko do podglądu.",
+    "progressTotals": {
+      "toStart": "Do rozpoczęcia",
+      "ongoing": "W trakcie",
+      "completed": "Ukończone",
+      "cancelled": "Anulowane"
+    },
+    "progressCounters": "Postęp celów",
+    "openPart": "Przejdź do sekcji",
+    "backToGoalCentre": "Wróć do Centrum celów"
   },
   "groupGoals": {
     "sectionTitle": "Wspólne cele i oczekiwania całej Grupy",
@@ -276,7 +285,65 @@
     "errors": {
       "endBeforeStart": "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia",
       "inactiveCompetency": "Ta kompetencja nie jest już dostępna – wybierz inną"
-    }
+    },
+    "sectionTitle": "Cele rozwojowe",
+    "intro": {
+      "purpose": "Cele rozwojowe pomagają Ci poszerzać umiejętności, wiedzę i kompetencje potrzebne w obecnej roli, a jednocześnie wspierają Twój długofalowy rozwój zawodowy i aspiracje.",
+      "instructions": "Opisz tu konkretne cele i działania rozwojowe – zarówno te, które budują umiejętności potrzebne w obecnej roli, jak i te, które przybliżają Cię do Twoich celów zawodowych.",
+      "resources": "Formułowanie skutecznych celów to ważna umiejętność. <link>Zajrzyj do materiałów w zakładce Pomoc i wsparcie.</link>"
+    },
+    "addGoal": "Dodaj cel rozwojowy",
+    "newGoal": "Nowy cel rozwojowy",
+    "openGoal": "Otwórz cel: {competency}",
+    "editGoal": "Edytuj cel: {competency}",
+    "deleteGoalNamed": "Usuń cel: {competency}",
+    "noCompetency": "Kompetencja niewybrana",
+    "noArea": "Obszar rozwoju niewybrany",
+    "notFilled": "Nie uzupełniono",
+    "inactiveSuffix": "{name} (niedostępna)",
+    "choose": "Wybierz…",
+    "progressValue": "Postęp: {progress}",
+    "requiredMark": "(pole obowiązkowe)",
+    "requiredLegend": "Pola oznaczone * są wymagane, aby dodać cel do planu.",
+    "fieldHints": {
+      "competency": "Wybierz kompetencję z katalogu na ten rok",
+      "developmentArea": "Na jakim obszarze chcesz się skupić?",
+      "actionTitle": "Jak chcesz osiągnąć cel? Nazwij działanie rozwojowe",
+      "actionDescription": "Opisz działanie: co zrobisz i czego się nauczysz",
+      "period": "Podaj datę rozpoczęcia i zakończenia (w roku {year})"
+    },
+    "saving": "Zapisywanie…",
+    "saved": "Zapisano.",
+    "documentSent": "Dokument został wysłany – cele rozwojowe można tylko wyświetlić.",
+    "sentNotice": "Dokument był już wysłany do walidacji: cel można anulować, ale nie usunąć.",
+    "fieldErrors": {
+      "COMPETENCY_REQUIRED": "Wybierz kompetencję",
+      "COMPETENCY_INVALID": "Wybierz kompetencję z listy",
+      "COMPETENCY_INACTIVE": "Ta kompetencja nie jest już dostępna – wybierz inną",
+      "AREA_REQUIRED": "Wybierz obszar rozwoju",
+      "AREA_INVALID": "Wybierz obszar rozwoju z listy",
+      "AREA_INACTIVE": "Ten obszar rozwoju nie jest już dostępny – wybierz inny",
+      "ACTION_TITLE_REQUIRED": "Nazwij działanie rozwojowe",
+      "ACTION_DESCRIPTION_REQUIRED": "Opisz działanie rozwojowe",
+      "TEXT_TOO_LONG": "Tekst jest za długi",
+      "DATE_REQUIRED": "Podaj datę",
+      "DATE_INVALID": "Podaj poprawną datę",
+      "DATE_OUTSIDE_CYCLE": "Data musi przypadać w roku {year}",
+      "END_BEFORE_START": "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia",
+      "PROGRESS_INVALID": "Wybierz postęp z listy",
+      "INVALID_INPUT": "Sprawdź wartość tego pola"
+    },
+    "actionErrors": {
+      "NOT_EDITABLE": "Tego celu nie można już zmienić – dokument został wysłany albo cykl jest zamknięty.",
+      "GOAL_CANCELLED": "Ten cel jest anulowany i nie można go zmienić.",
+      "DOCUMENT_ALREADY_SENT": "Dokument był już wysłany do walidacji – cel można tylko anulować.",
+      "DOCUMENT_NOT_SENT": "Cel można anulować dopiero po wysłaniu dokumentu. Wcześniej możesz go usunąć.",
+      "TOO_MANY_GOALS": "Osiągnięto maksymalną liczbę celów rozwojowych.",
+      "INVALID_INPUT": "Popraw zaznaczone pola.",
+      "FORBIDDEN": "Nie masz uprawnień do tej operacji.",
+      "FAILED": "Nie udało się zapisać. Spróbuj ponownie."
+    },
+    "listHeading": "Moje cele rozwojowe"
   },
   "workflow": {
     "sendForValidation": "Wyślij do walidacji",

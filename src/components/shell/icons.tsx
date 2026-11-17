@@ -118,3 +118,20 @@ export function DocumentIcon({ className = "size-6" }: IconProps) {
     </svg>
   );
 }
+
+export function PlusIcon({ className = "size-6" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+export function TrashIcon({ className = "size-4" }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  );
+}

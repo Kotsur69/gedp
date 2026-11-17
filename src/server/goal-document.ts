@@ -1,0 +1,65 @@
+import "server-only";
+import type { Prisma } from "@/generated/prisma/client";
+import { EDITABLE_DOCUMENT_STATUSES } from "@/server/group-goals";
+import { ForbiddenError, requireDocumentPermission, type Viewer } from "@/server/permissions";
+
+// Shared by the goal writers of Parts 2 and 3 (performance-goals.ts, development-goals.ts): the
+// document lock and permission check every goal write starts with, and the @db.Date conversions.
+
+type Tx = Prisma.TransactionClient;
+
+export interface LockedGoalDocument {
+  cycleId: number;
+  cycleYear: number;
+  /** Cycle OTWARTY and document SZKIC or ZWROCONY. The caller throws its own NOT_EDITABLE. */
+  isEditable: boolean;
+  /** Has gone to validation at least once (a returned document counts as sent). */
+  wasSent: boolean;
+}
+
+interface LockedDocumentRow {
+  documentStatus: string;
+  cycleStatus: string;
+  cycleId: number;
+  cycleYear: number;
+}
+
+/** True once the document has been sent to validation (G2-25: delete before, cancel after). */
+export async function wasDocumentSent(
+  db: Pick<Prisma.TransactionClient, "documentStatusHistory">,
+  documentId: number,
+): Promise<boolean> {
+  return (await db.documentStatusHistory.count({ where: { documentId, toStatus: "DO_WALIDACJI" } })) > 0;
+}
+
+/**
+ * Inside a write transaction: locks the document FOR UPDATE and its cycle FOR SHARE (a concurrent
+ * send or cycle close waits for this transaction), then checks permission: edit, owner only.
+ * NotFoundError / ForbiddenError as in the permission module; editability is returned, not thrown.
+ */
+export async function lockOwnGoalDocument(tx: Tx, viewer: Viewer, documentId: number): Promise<LockedGoalDocument> {
+  // documentId is a validated int4; $queryRaw binds it as a parameter.
+  const [locked] = await tx.$queryRaw<LockedDocumentRow[]>`
+    SELECT d.status::text AS "documentStatus", c.status::text AS "cycleStatus", c.id AS "cycleId", c.year AS "cycleYear"
+    FROM gedp_document d JOIN cycle c ON c.id = d.cycle_id
+    WHERE d.id = ${documentId}
+    FOR UPDATE OF d FOR SHARE OF c`;
+
+  // Missing documents fall through to the permission check, which reports them as not found.
+  const access = await requireDocumentPermission(tx, viewer, documentId, "edit");
+  if (access.employeeId !== viewer.id) throw new ForbiddenError("edit", `document ${documentId}: owner only`);
+  if (!locked) return { cycleId: access.cycleId, cycleYear: 0, isEditable: false, wasSent: false };
+
+  return {
+    cycleId: locked.cycleId,
+    cycleYear: locked.cycleYear,
+    isEditable:
+      locked.cycleStatus === "OTWARTY" &&
+      (EDITABLE_DOCUMENT_STATUSES as readonly string[]).includes(locked.documentStatus),
+    wasSent: await wasDocumentSent(tx, documentId),
+  };
+}
+
+// @db.Date values travel as UTC midnight.
+export const toIsoDate = (date: Date | null): string | null => (date ? date.toISOString().slice(0, 10) : null);
+export const fromIsoDate = (date: string | null): Date | null => (date ? new Date(`${date}T00:00:00.000Z`) : null);

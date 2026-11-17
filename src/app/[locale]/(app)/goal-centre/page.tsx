@@ -1,13 +1,16 @@
-import { Suspense, type ReactNode } from "react";
+import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
-import { CheckIcon } from "@/components/shell/icons";
+import { ChevronRightIcon } from "@/components/shell/icons";
+import { developmentGoalCounters } from "@/domain/development-goal";
 import type { Locale } from "@/i18n/config";
 import { formatDate } from "@/i18n/format";
 import { requireEmployee } from "@/server/current-employee";
 import { getSelectedCycle } from "@/server/cycles";
 import { db } from "@/server/db";
+import { loadDevelopmentGoals } from "@/server/development-goals";
 import {
   aggregateCounters,
   BHP_COMMITMENT_MAX_LENGTH,
@@ -16,12 +19,15 @@ import {
   loadGroupGoals,
   loadGroupGoalTemplates,
   type GroupGoalView,
+  type SectionCounters,
 } from "@/server/group-goals";
+import { CounterRings, Notice, Panel, SectionChips } from "./goal-centre-ui";
 import { GroupGoalCards, type GroupGoalCardData } from "./group-goal-cards";
 
 // Goal Centre ("Centrum celów", G1-01..12, WF-23) for the cycle year picked in the header.
 // The person's own document is created as SZKIC on first open of an open cycle. Part 1 (Group
-// goals) lives here; Parts 2 and 3 add their own section and pass their counters to the top bar.
+// goals) lives here; Part 3 (development goals) has its own screen, /goal-centre/development,
+// linked from its summary below. Every part passes its counters to the top bar.
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
@@ -36,6 +42,13 @@ export default async function GoalCentrePage() {
     </Suspense>
   );
 }
+
+// The N+1 counter keeps the warm tint the author circled on S06.
+const TOTAL_TONES = {
+  drafts: "border-line-strong",
+  addedToPlan: "border-accent/50",
+  changedByManager: "border-brand-orange/60 bg-notice-surface",
+} as const;
 
 async function GoalCentre() {
   const [viewer, selected, locale, t] = await Promise.all([
@@ -59,13 +72,27 @@ async function GoalCentre() {
   }
 
   const document = await ensureOwnDocument(db(), viewer, cycle);
-  const part1 = document
-    ? await loadGroupGoals(db(), viewer, document.id, cycle.status)
-    : { documentId: null, status: null, canChange: false, goals: await loadGroupGoalTemplates(db(), cycle.id) };
+  const [part1, part3] = await Promise.all([
+    document
+      ? loadGroupGoals(db(), viewer, document.id, cycle.status)
+      : loadGroupGoalTemplates(db(), cycle.id).then((goals) => ({
+          documentId: null,
+          status: null,
+          canChange: false,
+          goals,
+        })),
+    document ? loadDevelopmentGoals(db(), viewer, document.id, cycle.status) : null,
+  ]);
 
   const groupCounters = groupGoalCounters(part1.goals);
-  // Parts 2 and 3 append their SectionCounters here.
-  const totals = aggregateCounters([groupCounters]);
+  const developmentCounters = part3?.counters ?? developmentGoalCounters([]);
+  // Part 3 "Dodane do planu" feeds the top bar's "done" (see SectionCounters).
+  const developmentSection: SectionCounters = {
+    drafts: developmentCounters.drafts,
+    done: developmentCounters.inPlan,
+    changedByManager: developmentCounters.changedByManager,
+  };
+  const totals = aggregateCounters([groupCounters, developmentSection]);
   const isReadOnly = cycle.status !== "OTWARTY";
   const isSent = part1.status !== null && !isReadOnly && !part1.canChange;
 
@@ -89,12 +116,22 @@ async function GoalCentre() {
             </h1>
             <p className="mt-1 text-sm font-semibold text-ink-soft">{t("goalCentre.myGoals")}</p>
           </div>
-          <TotalsBar
+          <CounterRings
             label={t("goalCentre.allParts")}
             items={[
-              { key: "drafts", label: t("goalCentre.totals.drafts"), value: totals.drafts },
-              { key: "addedToPlan", label: t("goalCentre.totals.addedToPlan"), value: totals.done },
-              { key: "changedByManager", label: t("goalCentre.totals.changedByManager"), value: totals.changedByManager },
+              { key: "drafts", label: t("goalCentre.totals.drafts"), value: totals.drafts, tone: TOTAL_TONES.drafts },
+              {
+                key: "addedToPlan",
+                label: t("goalCentre.totals.addedToPlan"),
+                value: totals.done,
+                tone: TOTAL_TONES.addedToPlan,
+              },
+              {
+                key: "changedByManager",
+                label: t("goalCentre.totals.changedByManager"),
+                value: totals.changedByManager,
+                tone: TOTAL_TONES.changedByManager,
+              },
             ]}
           />
         </div>
@@ -133,6 +170,44 @@ async function GoalCentre() {
           )}
         </div>
       </Panel>
+
+      <Panel labelledBy="development-goals-title">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 id="development-goals-title" className="text-2xl font-semibold text-ink">
+              {t("developmentGoals.sectionTitle")}
+            </h2>
+            <SectionChips
+              label={t("goalCentre.sectionCounters")}
+              chips={[
+                { key: "drafts", text: t("goalCentre.counters.drafts", { count: developmentCounters.drafts }) },
+                {
+                  key: "addedToPlan",
+                  text: t("goalCentre.counters.addedToPlan", { count: developmentCounters.inPlan }),
+                },
+                {
+                  key: "changedByManager",
+                  text: t("goalCentre.counters.changedByManager", { count: developmentCounters.changedByManager }),
+                },
+                {
+                  key: "cancelled",
+                  text: t("goalCentre.counters.cancelled", { count: developmentCounters.cancelled }),
+                  hasCheck: false,
+                },
+              ]}
+            />
+            <p className="mt-4 max-w-3xl leading-relaxed text-ink-soft">{t("developmentGoals.intro.purpose")}</p>
+          </div>
+          <Link
+            href="/goal-centre/development"
+            aria-describedby="development-goals-title"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-xl bg-(image:--am-gradient) px-5 font-semibold tracking-[0.04em] text-on-brand transition-opacity duration-200 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:self-end"
+          >
+            {t("goalCentre.openPart")}
+            <ChevronRightIcon className="size-4" />
+          </Link>
+        </div>
+      </Panel>
     </div>
   );
 }
@@ -146,67 +221,4 @@ function toCardData(goal: GroupGoalView, title: string, locale: Locale): GroupGo
     acknowledgedOn: goal.acknowledgedAt ? formatDate(goal.acknowledgedAt, locale) : null,
     commitment: goal.commitment,
   };
-}
-
-function Panel({ children, labelledBy }: { children: ReactNode; labelledBy: string }) {
-  return (
-    <section
-      aria-labelledby={labelledBy}
-      className="rounded-3xl border border-surface/90 bg-surface/75 p-6 shadow-card backdrop-blur-xl sm:p-8"
-    >
-      {children}
-    </section>
-  );
-}
-
-type CounterItem = { key: string; label: string; value: number };
-
-// The N+1 counter keeps the warm tint the author circled on S06.
-const TOTAL_TONES: Readonly<Record<string, string>> = {
-  drafts: "border-line-strong",
-  addedToPlan: "border-accent/50",
-  changedByManager: "border-brand-orange/60 bg-notice-surface",
-};
-
-/** WF-23: totals across all parts. */
-function TotalsBar({ label, items }: { label: string; items: readonly CounterItem[] }) {
-  return (
-    <dl aria-label={label} className="flex gap-3 sm:gap-5">
-      {items.map((item) => (
-        <div key={item.key} className="flex w-24 flex-col-reverse items-center gap-2 text-center">
-          <dt className="text-xs leading-tight font-semibold text-ink-soft">{item.label}</dt>
-          <dd
-            className={`flex size-14 items-center justify-center rounded-full border-2 bg-surface text-xl font-semibold text-ink tabular-nums ${TOTAL_TONES[item.key] ?? "border-line-strong"}`}
-          >
-            {item.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-/** G1-10: display only until Q-16 decides whether the chips filter the cards. */
-function SectionChips({ label, chips }: { label: string; chips: readonly { key: string; text: string }[] }) {
-  return (
-    <ul aria-label={label} className="mt-3 flex flex-wrap gap-2">
-      {chips.map((chip) => (
-        <li
-          key={chip.key}
-          className="inline-flex items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 py-1.5 text-sm font-semibold text-ink tabular-nums"
-        >
-          <CheckIcon className="size-3.5 text-accent" />
-          {chip.text}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Notice({ children }: { children: ReactNode }) {
-  return (
-    <p role="status" className="mt-4 rounded-xl bg-notice-surface px-4 py-3 text-sm font-semibold text-notice">
-      {children}
-    </p>
-  );
 }

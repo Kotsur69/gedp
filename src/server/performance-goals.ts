@@ -21,6 +21,7 @@ import {
   type TargetTypeOption,
 } from "@/domain/performance-goal";
 import { writeAudit } from "@/server/audit";
+import { fromIsoDate, lockOwnGoalDocument, toIsoDate, type LockedGoalDocument } from "@/server/goal-document";
 import { EDITABLE_DOCUMENT_STATUSES } from "@/server/group-goals";
 import { ForbiddenError, NotFoundError, requireDocumentPermission, type Viewer } from "@/server/permissions";
 
@@ -152,10 +153,6 @@ const goalSelect = {
 
 type GoalRow = Prisma.PerformanceGoalGetPayload<{ select: typeof goalSelect }>;
 
-// @db.Date values travel as UTC midnight.
-const toIsoDate = (date: Date | null): string | null => (date ? date.toISOString().slice(0, 10) : null);
-const fromIsoDate = (date: string | null): Date | null => (date ? new Date(`${date}T00:00:00.000Z`) : null);
-
 function toView(row: GoalRow): PerformanceGoalView {
   return {
     id: row.id,
@@ -263,50 +260,18 @@ export async function loadGoalFormContext(
 type Tx = Prisma.TransactionClient;
 export type PerformanceGoalWriter = Pick<PrismaClient, "$transaction">;
 
-interface LockedDocumentRow {
-  documentStatus: string;
-  cycleStatus: string;
-  cycleYear: number;
-}
-
-interface EditableDocument {
-  cycleYear: number;
-  /** Has gone to validation at least once (a returned document counts as sent). */
-  wasSent: boolean;
-}
-
-/**
- * Inside the write transaction: locks the document FOR UPDATE and its cycle FOR SHARE (a concurrent
- * send or cycle close waits for this transaction), then checks permission (edit, owner only), an
- * open cycle and a not-sent document.
- */
-async function lockEditableDocument(tx: Tx, viewer: Viewer, documentId: number): Promise<EditableDocument> {
-  // documentId is a validated int4; $queryRaw binds it as a parameter.
-  const [locked] = await tx.$queryRaw<LockedDocumentRow[]>`
-    SELECT d.status::text AS "documentStatus", c.status::text AS "cycleStatus", c.year AS "cycleYear"
-    FROM gedp_document d JOIN cycle c ON c.id = d.cycle_id
-    WHERE d.id = ${documentId}
-    FOR UPDATE OF d FOR SHARE OF c`;
-
-  // Missing documents fall through to the permission check, which reports them as not found.
-  const access = await requireDocumentPermission(tx, viewer, documentId, "edit");
-  if (access.employeeId !== viewer.id) throw new ForbiddenError("edit", `document ${documentId}: owner only`);
-
-  const isEditable =
-    locked !== undefined &&
-    locked.cycleStatus === "OTWARTY" &&
-    (EDITABLE_DOCUMENT_STATUSES as readonly string[]).includes(locked.documentStatus);
-  if (!isEditable) throw new PerformanceGoalError("NOT_EDITABLE");
-
-  const sends = await tx.documentStatusHistory.count({ where: { documentId, toStatus: "DO_WALIDACJI" } });
-  return { cycleYear: locked.cycleYear, wasSent: sends > 0 };
+/** Lock + owner check (goal-document.ts), then an open cycle and a not-sent document. */
+async function lockEditableDocument(tx: Tx, viewer: Viewer, documentId: number): Promise<LockedGoalDocument> {
+  const document = await lockOwnGoalDocument(tx, viewer, documentId);
+  if (!document.isEditable) throw new PerformanceGoalError("NOT_EDITABLE");
+  return document;
 }
 
 /**
  * Locks the goal's document (lockEditableDocument), then re-reads the goal under that lock. A goal
  * that does not exist is reported exactly like an invisible one: NotFoundError.
  */
-async function lockEditableGoal(tx: Tx, viewer: Viewer, goalId: number): Promise<{ document: EditableDocument; row: GoalRow }> {
+async function lockEditableGoal(tx: Tx, viewer: Viewer, goalId: number): Promise<{ document: LockedGoalDocument; row: GoalRow }> {
   const owner = await tx.performanceGoal.findUnique({ where: { id: goalId }, select: { documentId: true } });
   if (!owner) throw new NotFoundError(`performance goal ${goalId}`);
   const document = await lockEditableDocument(tx, viewer, owner.documentId);

@@ -199,7 +199,16 @@
     },
     "sectionCounters": "Section counters",
     "noCycle": "There is no GEDP cycle yet.",
-    "viewOnlyNotice": "This year is view only."
+    "viewOnlyNotice": "This year is view only.",
+    "progressTotals": {
+      "toStart": "To start",
+      "ongoing": "Ongoing",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "progressCounters": "Goal progress",
+    "openPart": "Go to section",
+    "backToGoalCentre": "Back to Goal Centre"
   },
   "groupGoals": {
     "sectionTitle": "Common goals and expectations for the whole Group",
@@ -276,7 +285,65 @@
     "errors": {
       "endBeforeStart": "The end date cannot be earlier than the start date",
       "inactiveCompetency": "This competency is no longer available – choose another one"
-    }
+    },
+    "sectionTitle": "Development goals",
+    "intro": {
+      "purpose": "Development goals help you grow the skills, knowledge and competencies you need in your current role, while also supporting your long-term career growth and aspirations.",
+      "instructions": "Describe specific development goals and actions here – both those that build the skills your current role needs and those that bring you closer to your career goals.",
+      "resources": "Writing effective goals is an important skill. <link>See the materials in the Help and support tab.</link>"
+    },
+    "addGoal": "Add a development goal",
+    "newGoal": "New development goal",
+    "openGoal": "Open goal: {competency}",
+    "editGoal": "Edit goal: {competency}",
+    "deleteGoalNamed": "Delete goal: {competency}",
+    "noCompetency": "No competency selected",
+    "noArea": "No development area selected",
+    "notFilled": "Not filled in",
+    "inactiveSuffix": "{name} (no longer available)",
+    "choose": "Choose…",
+    "progressValue": "Progress: {progress}",
+    "requiredMark": "(required field)",
+    "requiredLegend": "Fields marked * are required to add the goal to the plan.",
+    "fieldHints": {
+      "competency": "Choose a competency from this year's catalogue",
+      "developmentArea": "Which area would you like to focus on?",
+      "actionTitle": "How will you attain the goal? Name the development action",
+      "actionDescription": "Describe the action: what you will do and what you will learn",
+      "period": "Give the start and end date (within {year})"
+    },
+    "saving": "Saving…",
+    "saved": "Saved.",
+    "documentSent": "The document has been sent – development goals can only be viewed.",
+    "sentNotice": "The document has already been sent for validation: the goal can be cancelled, not deleted.",
+    "fieldErrors": {
+      "COMPETENCY_REQUIRED": "Choose a competency",
+      "COMPETENCY_INVALID": "Choose a competency from the list",
+      "COMPETENCY_INACTIVE": "This competency is no longer available – choose another one",
+      "AREA_REQUIRED": "Choose a development area",
+      "AREA_INVALID": "Choose a development area from the list",
+      "AREA_INACTIVE": "This development area is no longer available – choose another one",
+      "ACTION_TITLE_REQUIRED": "Name the development action",
+      "ACTION_DESCRIPTION_REQUIRED": "Describe the development action",
+      "TEXT_TOO_LONG": "The text is too long",
+      "DATE_REQUIRED": "Please provide a date",
+      "DATE_INVALID": "Please provide a valid date",
+      "DATE_OUTSIDE_CYCLE": "The date must fall within {year}",
+      "END_BEFORE_START": "The end date cannot be earlier than the start date",
+      "PROGRESS_INVALID": "Choose a progress value from the list",
+      "INVALID_INPUT": "Check the value of this field"
+    },
+    "actionErrors": {
+      "NOT_EDITABLE": "This goal can no longer be changed – the document has been sent or the cycle is closed.",
+      "GOAL_CANCELLED": "This goal is cancelled and cannot be changed.",
+      "DOCUMENT_ALREADY_SENT": "The document has already been sent for validation – the goal can only be cancelled.",
+      "DOCUMENT_NOT_SENT": "A goal can be cancelled only after the document has been sent. Until then you can delete it.",
+      "TOO_MANY_GOALS": "You have reached the maximum number of development goals.",
+      "INVALID_INPUT": "Correct the highlighted fields.",
+      "FORBIDDEN": "You are not allowed to do this.",
+      "FAILED": "Saving failed. Please try again."
+    },
+    "listHeading": "My development goals"
   },
   "workflow": {
     "sendForValidation": "Send for validation",

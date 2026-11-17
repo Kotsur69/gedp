@@ -116,7 +116,8 @@ export function isoDateYear(value: string): number | null {
   return isReal ? year : null;
 }
 
-function textField(maxLength: number) {
+/** Optional trimmed text; blank becomes null. Shared with Part 3 (development-goal.ts). */
+export function textField(maxLength: number) {
   return z
     .string({ error: "INVALID_INPUT" })
     .trim()
