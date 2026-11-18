@@ -35,12 +35,27 @@ type RevertStatusDialogProps = {
 export function RevertStatusDialog({ document, onClosed, onReverted, onStale }: RevertStatusDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pendingRef = useRef(false);
+  // Set by the form's own close (after a save or a stale result). The close event fires after
+  // dialog.close() returns, and the still-pending transition re-renders the form in between, which
+  // sets pendingRef back to true - so pendingRef alone would reopen a window the form just closed.
+  const isCloseRequestedRef = useRef(false);
+
+  const handleClose = () => {
+    const isRequested = isCloseRequestedRef.current;
+    isCloseRequestedRef.current = false;
+    // Any other close while a save runs (e.g. a repeated Escape): reopen, the result would be lost.
+    if (!isRequested && pendingRef.current && document) return dialogRef.current?.showModal();
+    onClosed();
+  };
 
   // Syncs the native <dialog> (an external DOM API) with the document chosen in the table.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (document && !dialog.open) dialog.showModal();
+    if (document && !dialog.open) {
+      isCloseRequestedRef.current = false;
+      dialog.showModal();
+    }
     if (!document && dialog.open) dialog.close();
   }, [document]);
 
@@ -50,7 +65,7 @@ export function RevertStatusDialog({ document, onClosed, onReverted, onStale }: 
       aria-labelledby={TITLE_ID}
       // Escape must not close the window while a save is running: its result would be lost.
       onCancel={(event) => pendingRef.current && event.preventDefault()}
-      onClose={() => (pendingRef.current && document ? dialogRef.current?.showModal() : onClosed())}
+      onClose={handleClose}
       className="m-auto max-h-[92dvh] w-[min(100%-2rem,36rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-ink/45 backdrop:backdrop-blur-sm"
     >
       {document && (
@@ -59,9 +74,11 @@ export function RevertStatusDialog({ document, onClosed, onReverted, onStale }: 
           document={document}
           pendingRef={pendingRef}
           requestClose={() => {
-            // Not pending any more: the close must not be undone by the reopen guard in onClose.
-            pendingRef.current = false;
-            dialogRef.current?.close();
+            const dialog = dialogRef.current;
+            // Already closed (e.g. a forced Escape): no close event will come to consume the flag.
+            if (!dialog?.open) return;
+            isCloseRequestedRef.current = true;
+            dialog.close();
           }}
           onReverted={onReverted}
           onStale={onStale}
