@@ -14,6 +14,7 @@ import {
   createDevelopmentGoalAction,
   deleteDevelopmentGoalAction,
   updateDevelopmentGoalAction,
+  updateDevelopmentGoalAsValidatorAction,
   type DevelopmentGoalActionErrorCode,
   type DevelopmentGoalActionResult,
 } from "./actions";
@@ -51,6 +52,8 @@ type DialogProps = {
   documentId: number | null;
   canChange: boolean;
   wasSent: boolean;
+  /** WF-04: the validator edits during validation - content only, no plan or cancel buttons. */
+  isValidator?: boolean;
   onClosed: () => void;
 };
 
@@ -107,7 +110,7 @@ type BodyProps = Omit<DialogProps, "target" | "onClosed"> & {
 };
 
 function DialogBody(props: BodyProps) {
-  const { target, goals, context, documentId, canChange, wasSent, cancelRequestRef, requestClose } = props;
+  const { target, goals, context, documentId, canChange, wasSent, isValidator = false, cancelRequestRef, requestClose } = props;
   const t = useTranslations("developmentGoals");
   const tCentre = useTranslations("goalCentre");
   const tCommon = useTranslations("common");
@@ -182,11 +185,13 @@ function DialogBody(props: BodyProps) {
     const parsed = developmentGoalSchema(saveMode, context).safeParse(payload);
     if (!parsed.success) return showErrors(developmentGoalFieldErrors(parsed.error), false);
     setFieldErrors({});
-    run(() =>
-      goal
+    run(() => {
+      // WF-04: the validator's save never changes the goal's state, so it sends no mode.
+      if (goal && isValidator) return updateDevelopmentGoalAsValidatorAction({ goalId: goal.id, goal: payload });
+      return goal
         ? updateDevelopmentGoalAction({ goalId: goal.id, mode: saveMode, goal: payload })
-        : createDevelopmentGoalAction({ documentId, mode: saveMode, goal: payload }),
-    );
+        : createDevelopmentGoalAction({ documentId, mode: saveMode, goal: payload });
+    });
   };
 
   // Edit starts from the goal as it is now, not as it was when the window opened.
@@ -227,6 +232,8 @@ function DialogBody(props: BodyProps) {
   const heading = goal ? (competency ?? t("noCompetency")) : t("newGoal");
   const errorKey: ActionErrorKey = actionError && isActionErrorKey(actionError) ? actionError : "INVALID_INPUT";
   const mayChange = canChange && documentId !== null && goal?.state !== "ANULOWANY";
+  // The validator only changes content: no "Dodaj do planu", no "Anuluj cel".
+  const mayAddToPlan = goal?.state !== "W_PLANIE" && !isValidator;
   const confirmText = {
     confirmDelete: tCentre("deleteConfirm"),
     confirmCancel: tCentre("cancelConfirm"),
@@ -261,7 +268,9 @@ function DialogBody(props: BodyProps) {
         {mode !== "view" && mode !== "edit" && <Confirmation>{confirmText[mode]}</Confirmation>}
         {actionError && (
           <p id={ERROR_ID} role="alert" tabIndex={-1} className="mt-4 text-sm font-semibold text-danger focus:outline-none">
-            {t(`actionErrors.${errorKey}`)}
+            {isValidator && actionError === "NOT_EDITABLE"
+              ? t("actionErrors.VALIDATOR_NOT_EDITABLE")
+              : t(`actionErrors.${errorKey}`)}
           </p>
         )}
       </div>
@@ -269,7 +278,7 @@ function DialogBody(props: BodyProps) {
       <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-line px-6 py-4 sm:px-8">
         {mode === "view" && (
           <>
-            {mayChange && wasSent && (
+            {mayChange && wasSent && !isValidator && (
               <ActionButton variant="danger" onClick={() => switchMode("confirmCancel", CONFIRM_NO_ID)}>
                 {tCentre("cancelGoal")}
               </ActionButton>
@@ -286,13 +295,13 @@ function DialogBody(props: BodyProps) {
               {tCommon("cancel")}
             </ActionButton>
             <ActionButton
-              variant={goal?.state === "W_PLANIE" ? "primary" : "secondary"}
+              variant={mayAddToPlan ? "secondary" : "primary"}
               onClick={() => handleSave("DRAFT")}
               isBusy={isPending}
             >
               {isPending ? t("saving") : tCentre("saveAndClose")}
             </ActionButton>
-            {goal?.state !== "W_PLANIE" && (
+            {mayAddToPlan && (
               <ActionButton onClick={() => handleSave("PLAN")} isBusy={isPending}>
                 {tCentre("addToPlan")}
               </ActionButton>

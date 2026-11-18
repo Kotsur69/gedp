@@ -21,7 +21,15 @@ import {
   type TargetTypeOption,
 } from "@/domain/performance-goal";
 import { writeAudit } from "@/server/audit";
-import { fromIsoDate, lockOwnGoalDocument, toIsoDate, type LockedGoalDocument } from "@/server/goal-document";
+import {
+  fromIsoDate,
+  lockOwnGoalDocument,
+  lockValidatorGoalDocument,
+  MANAGER_UPDATE_AUDIT_ACTION,
+  toIsoDate,
+  type LockedGoalDocument,
+  type ValidatorLockedGoalDocument,
+} from "@/server/goal-document";
 import { EDITABLE_DOCUMENT_STATUSES, goalEditScope } from "@/domain/document-status";
 import { ForbiddenError, NotFoundError, requireDocumentPermission, type Viewer } from "@/server/permissions";
 
@@ -38,9 +46,14 @@ import { ForbiddenError, NotFoundError, requireDocumentPermission, type Viewer }
 // - cancel ("Anuluj cel"): only after the document has been sent; the goal stays as ANULOWANY.
 //
 // Who: owner only, like Part 1. HR's general "edit" right does not extend to writing someone's
-// goals; N+1 changes during validation (WF-04, "Zmienione przez N+1") belong to the validation flow.
-// When: cycle OTWARTY and document SZKIC or ZWROCONY - so in practice cancel runs on a returned
-// document. Both are re-asserted inside the transaction with the document row locked FOR UPDATE.
+// goals. When: cycle OTWARTY and document SZKIC or ZWROCONY - so in practice cancel runs on a
+// returned document. Both are re-asserted inside the transaction with the document row locked FOR UPDATE.
+//
+// WF-04 (updatePerformanceGoalAsValidator): while the document is DO_WALIDACJI, its validator (the
+// permission module's `validate`) may change a goal's content. The goal keeps its state, gets
+// changedByManager = true ("Zmieniony przez N+1", counted in the section and top-bar counters) and
+// the audit row keeps the previous and the new values. The flag stays after approve / return, so
+// the employee sees which goals N+1 changed.
 
 const MAX_INT4 = 2_147_483_647;
 /** [ZAŁ] Upper bound per document (Q-03 asks HR for the real maximum); counts cancelled goals too. */
@@ -53,6 +66,8 @@ export const createGoalInputSchema = z
   .strict();
 export const updateGoalInputSchema = z.object({ goalId: dbIdSchema, mode: saveModeSchema, goal: z.unknown() }).strict();
 export const goalIdInputSchema = z.object({ goalId: dbIdSchema }).strict();
+/** WF-04: no save mode - the validator changes a goal's content, never its state. */
+export const validatorUpdateGoalInputSchema = z.object({ goalId: dbIdSchema, goal: z.unknown() }).strict();
 
 /** Rule violations that are not about the payload. */
 export type GoalStateErrorCode =
@@ -276,14 +291,29 @@ async function lockEditableDocument(tx: Tx, viewer: Viewer, documentId: number):
   return document;
 }
 
+/** WF-04: validator lock + permission (goal-document.ts), then an open cycle and DO_WALIDACJI. */
+async function lockValidatedDocument(tx: Tx, viewer: Viewer, documentId: number): Promise<ValidatorLockedGoalDocument> {
+  const document = await lockValidatorGoalDocument(tx, viewer, documentId);
+  if (!document.isEditable) throw new PerformanceGoalError("NOT_EDITABLE");
+  return document;
+}
+
+type DocumentLocker<D> = (tx: Tx, viewer: Viewer, documentId: number) => Promise<D>;
+
 /**
- * Locks the goal's document (lockEditableDocument), then re-reads the goal under that lock. A goal
- * that does not exist is reported exactly like an invisible one: NotFoundError.
+ * Locks the goal's document (lockEditableDocument for the owner, lockValidatedDocument for WF-04),
+ * then re-reads the goal under that lock. A goal that does not exist is reported exactly like an
+ * invisible one: NotFoundError.
  */
-async function lockEditableGoal(tx: Tx, viewer: Viewer, goalId: number): Promise<{ document: LockedGoalDocument; row: GoalRow }> {
+async function lockGoal<D>(
+  tx: Tx,
+  viewer: Viewer,
+  goalId: number,
+  lockDocument: DocumentLocker<D>,
+): Promise<{ document: D; row: GoalRow }> {
   const owner = await tx.performanceGoal.findUnique({ where: { id: goalId }, select: { documentId: true } });
   if (!owner) throw new NotFoundError(`performance goal ${goalId}`);
-  const document = await lockEditableDocument(tx, viewer, owner.documentId);
+  const document = await lockDocument(tx, viewer, owner.documentId);
   // Pinned to the locked document: a goal deleted (or ever moved) since the first read is not found.
   const row = await tx.performanceGoal.findFirst({
     where: { id: goalId, documentId: owner.documentId },
@@ -292,6 +322,8 @@ async function lockEditableGoal(tx: Tx, viewer: Viewer, goalId: number): Promise
   if (!row) throw new NotFoundError(`performance goal ${goalId}`);
   return { document, row };
 }
+
+const lockEditableGoal = (tx: Tx, viewer: Viewer, goalId: number) => lockGoal(tx, viewer, goalId, lockEditableDocument);
 
 /**
  * Active target types, plus the default "Tekst" and `keepTypeId` even if HR has deactivated them:
@@ -396,6 +428,50 @@ export async function updatePerformanceGoal(
       action: "UPDATE",
       before: auditRecord(before),
       after: auditRecord(updated),
+    });
+    return updated;
+  });
+}
+
+/**
+ * WF-04: the validator changes a goal while the document is DO_WALIDACJI (full replace, like the
+ * owner's form). The state never changes: a goal in the plan is validated like "Dodaj do planu", a
+ * draft like "Zapisz i zamknij". Marks the goal "Zmieniony przez N+1" and audits before / after.
+ */
+export async function updatePerformanceGoalAsValidator(
+  db: PerformanceGoalWriter,
+  viewer: Viewer,
+  input: unknown,
+): Promise<PerformanceGoalView> {
+  const { goalId, goal } = parseEnvelope(validatorUpdateGoalInputSchema, input);
+  // The lenient mode refuses malformed payloads before any database call; PLAN rules follow below.
+  parseGoal("DRAFT", goal);
+
+  return db.$transaction(async (tx) => {
+    const { document, row } = await lockGoal(tx, viewer, goalId, lockValidatedDocument);
+    const before = toView(row);
+    if (before.state === "ANULOWANY") throw new PerformanceGoalError("GOAL_CANCELLED");
+
+    const saveMode: GoalSaveMode = before.state === "W_PLANIE" ? "PLAN" : "DRAFT";
+    const targetTypes = await loadTargetTypes(tx, before.targetTypeId);
+    const data = parseWithTypes(saveMode, goal, { cycleYear: document.cycleYear, targetTypes });
+    // Unchanged goal: no write, no flag and no audit row.
+    if (JSON.stringify(snapshot({ ...data, state: before.state })) === JSON.stringify(snapshot(before))) return before;
+
+    const updated = toView(
+      await tx.performanceGoal.update({
+        where: { id: goalId },
+        data: { ...goalColumns(data, saveMode, row.progress), changedByManager: true },
+        select: goalSelect,
+      }),
+    );
+    await writeAudit(tx, {
+      actorId: viewer.id,
+      entity: "performance_goal",
+      entityId: goalId,
+      action: MANAGER_UPDATE_AUDIT_ACTION,
+      before: { ...auditRecord(before), changedByManager: before.changedByManager },
+      after: { ...auditRecord(updated), changedByManager: updated.changedByManager },
     });
     return updated;
   });

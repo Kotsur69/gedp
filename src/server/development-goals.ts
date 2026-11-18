@@ -17,7 +17,16 @@ import {
 } from "@/domain/development-goal";
 import { progressFromPercent, progressToPercent } from "@/domain/performance-goal";
 import { writeAudit } from "@/server/audit";
-import { fromIsoDate, lockOwnGoalDocument, toIsoDate, wasDocumentSent, type LockedGoalDocument } from "@/server/goal-document";
+import {
+  fromIsoDate,
+  lockOwnGoalDocument,
+  lockValidatorGoalDocument,
+  MANAGER_UPDATE_AUDIT_ACTION,
+  toIsoDate,
+  wasDocumentSent,
+  type LockedGoalDocument,
+  type ValidatorLockedGoalDocument,
+} from "@/server/goal-document";
 import { EDITABLE_DOCUMENT_STATUSES, goalEditScope } from "@/domain/document-status";
 import { ForbiddenError, NotFoundError, requireDocumentPermission, type Viewer } from "@/server/permissions";
 
@@ -32,6 +41,9 @@ import { ForbiddenError, NotFoundError, requireDocumentPermission, type Viewer }
 // - delete: only while the document has never been sent; afterwards "Anuluj cel" (ANULOWANY).
 // - the catalogue (competency, development area) is read from the document's own cycle inside the
 //   transaction; only active entries are accepted (G3-20).
+// - WF-04 (updateDevelopmentGoalAsValidator): as in Part 2, the validator may change a goal while
+//   the document is DO_WALIDACJI; the goal keeps its state, gets changedByManager = true and the
+//   audit row keeps the previous and the new values.
 
 const MAX_INT4 = 2_147_483_647;
 /** [ZAŁ] Upper bound per document (Q-03); counts cancelled goals too. Same as Part 2. */
@@ -46,6 +58,8 @@ export const updateDevelopmentGoalInputSchema = z
   .object({ goalId: dbIdSchema, mode: saveModeSchema, goal: z.unknown() })
   .strict();
 export const developmentGoalIdInputSchema = z.object({ goalId: dbIdSchema }).strict();
+/** WF-04: no save mode - the validator changes a goal's content, never its state. */
+export const validatorUpdateDevelopmentGoalInputSchema = z.object({ goalId: dbIdSchema, goal: z.unknown() }).strict();
 
 /** Rule violations that are not about the payload. */
 export type DevelopmentGoalStateErrorCode =
@@ -239,15 +253,28 @@ async function lockEditableDocument(tx: Tx, viewer: Viewer, documentId: number):
   return document;
 }
 
-/** Locks the goal's document, then re-reads the goal under that lock (missing = not found). */
-async function lockEditableGoal(
+/** WF-04: validator lock + permission (goal-document.ts), then an open cycle and DO_WALIDACJI. */
+async function lockValidatedDocument(tx: Tx, viewer: Viewer, documentId: number): Promise<ValidatorLockedGoalDocument> {
+  const document = await lockValidatorGoalDocument(tx, viewer, documentId);
+  if (!document.isEditable) throw new DevelopmentGoalError("NOT_EDITABLE");
+  return document;
+}
+
+type DocumentLocker<D> = (tx: Tx, viewer: Viewer, documentId: number) => Promise<D>;
+
+/**
+ * Locks the goal's document (owner or WF-04 validator locker), then re-reads the goal under that
+ * lock (missing = not found).
+ */
+async function lockGoal<D>(
   tx: Tx,
   viewer: Viewer,
   goalId: number,
-): Promise<{ document: LockedGoalDocument; row: GoalRow }> {
+  lockDocument: DocumentLocker<D>,
+): Promise<{ document: D; row: GoalRow }> {
   const owner = await tx.developmentGoal.findUnique({ where: { id: goalId }, select: { documentId: true } });
   if (!owner) throw new NotFoundError(`development goal ${goalId}`);
-  const document = await lockEditableDocument(tx, viewer, owner.documentId);
+  const document = await lockDocument(tx, viewer, owner.documentId);
   // Pinned to the locked document: a goal deleted since the first read is not found.
   const row = await tx.developmentGoal.findFirst({
     where: { id: goalId, documentId: owner.documentId },
@@ -257,7 +284,12 @@ async function lockEditableGoal(
   return { document, row };
 }
 
-function contextFor(tx: Tx, document: LockedGoalDocument): Promise<DevelopmentGoalContext> {
+const lockEditableGoal = (tx: Tx, viewer: Viewer, goalId: number) => lockGoal(tx, viewer, goalId, lockEditableDocument);
+
+function contextFor(
+  tx: Tx,
+  document: Pick<LockedGoalDocument, "cycleId" | "cycleYear">,
+): Promise<DevelopmentGoalContext> {
   return loadDevelopmentGoalContext(tx, { id: document.cycleId, year: document.cycleYear });
 }
 
@@ -344,6 +376,49 @@ export async function updateDevelopmentGoal(
       action: "UPDATE",
       before: auditRecord(before),
       after: auditRecord(updated),
+    });
+    return updated;
+  });
+}
+
+/**
+ * WF-04: the validator changes a goal while the document is DO_WALIDACJI (full replace). The state
+ * never changes: a goal in the plan is validated like "Dodaj do planu", a draft like "Zapisz i
+ * zamknij". Marks the goal "Zmieniony przez N+1" and audits before / after.
+ */
+export async function updateDevelopmentGoalAsValidator(
+  db: DevelopmentGoalWriter,
+  viewer: Viewer,
+  input: unknown,
+): Promise<DevelopmentGoalView> {
+  const { goalId, goal } = parseEnvelope(validatorUpdateDevelopmentGoalInputSchema, input);
+  // The lenient mode refuses malformed payloads before any database call; PLAN rules follow below.
+  parseGoal("DRAFT", goal);
+
+  return db.$transaction(async (tx) => {
+    const { document, row } = await lockGoal(tx, viewer, goalId, lockValidatedDocument);
+    const before = toView(row);
+    if (before.state === "ANULOWANY") throw new DevelopmentGoalError("GOAL_CANCELLED");
+
+    const saveMode: GoalSaveMode = before.state === "W_PLANIE" ? "PLAN" : "DRAFT";
+    const data = parseGoal(saveMode, goal, await contextFor(tx, document));
+    // Unchanged goal: no write, no flag and no audit row.
+    if (JSON.stringify(snapshot({ ...data, state: before.state })) === JSON.stringify(snapshot(before))) return before;
+
+    const updated = toView(
+      await tx.developmentGoal.update({
+        where: { id: goalId },
+        data: { ...goalColumns(data, before.state, row.progress), changedByManager: true },
+        select: goalSelect,
+      }),
+    );
+    await writeAudit(tx, {
+      actorId: viewer.id,
+      entity: "development_goal",
+      entityId: goalId,
+      action: MANAGER_UPDATE_AUDIT_ACTION,
+      before: { ...auditRecord(before), changedByManager: before.changedByManager },
+      after: { ...auditRecord(updated), changedByManager: updated.changedByManager },
     });
     return updated;
   });

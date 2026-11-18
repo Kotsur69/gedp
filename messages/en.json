@@ -328,6 +328,7 @@
     },
     "actionErrors": {
       "NOT_EDITABLE": "This goal can no longer be changed – the document has been sent or the cycle is closed.",
+      "VALIDATOR_NOT_EDITABLE": "This goal can no longer be changed – the document is no longer waiting for validation or the cycle is closed.",
       "GOAL_CANCELLED": "This goal is cancelled and cannot be changed.",
       "DOCUMENT_ALREADY_SENT": "The document has already been sent for validation – the goal can only be cancelled.",
       "DOCUMENT_NOT_SENT": "A goal can be cancelled only after the document has been sent. Before that, you can delete it.",
@@ -420,6 +421,7 @@
     },
     "actionErrors": {
       "NOT_EDITABLE": "This goal can no longer be changed – the document has been sent or the cycle is closed.",
+      "VALIDATOR_NOT_EDITABLE": "This goal can no longer be changed – the document is no longer waiting for validation or the cycle is closed.",
       "GOAL_CANCELLED": "This goal is cancelled and cannot be changed.",
       "DOCUMENT_ALREADY_SENT": "The document has already been sent for validation – the goal can only be cancelled.",
       "DOCUMENT_NOT_SENT": "A goal can be cancelled only after the document has been sent. Until then you can delete it.",
@@ -522,7 +524,9 @@
     "emptyLevel": "Nobody at this level.",
     "truncated": "The list shows the first {limit} people. Narrow it with the level filter.",
     "modeValidate": "Validation mode",
-    "modeReadOnly": "Preview – read only"
+    "modeReadOnly": "Preview – read only",
+    "editGoal": "Change goal: {title}",
+    "validatorEditNotice": "As the validator you can change this employee's performance and development goals. A changed goal is marked \"Changed by N+1\", and its previous and new values are written to the audit log."
   },
   "admin": {
     "title": "Administrator panel",

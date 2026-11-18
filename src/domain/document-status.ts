@@ -85,6 +85,14 @@ export function goalEditScope(status: DocumentStatusValue, isCycleOpen: boolean)
   return isCycleOpen ? EDIT_SCOPE[status] : "NONE";
 }
 
+/**
+ * WF-04: while the document waits for validation, its validator (never the owner) may change the
+ * employee's goals; each change marks the goal "Zmieniony przez N+1". Nothing else is editable.
+ */
+export function canValidatorEditGoals(status: DocumentStatusValue, isCycleOpen: boolean): boolean {
+  return isCycleOpen && status === "DO_WALIDACJI";
+}
+
 /** Statuses in which the owner may still add and change goals. */
 export const EDITABLE_DOCUMENT_STATUSES: readonly DocumentStatusValue[] = Object.freeze(
   DOCUMENT_STATUSES.filter((status) => EDIT_SCOPE[status] === "FULL"),

@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { DocumentStatusValue } from "@/domain/document-status";
-import { createDevelopmentGoal } from "./development-goals";
 import { updateGoalProgress } from "./goal-progress";
 import { acknowledgeGroupGoal } from "./group-goals";
-import { createPerformanceGoal, deletePerformanceGoal } from "./performance-goals";
+import {
+  createPerformanceGoal,
+  deletePerformanceGoal,
+  PerformanceGoalError,
+  updatePerformanceGoalAsValidator,
+} from "./performance-goals";
+import { createDevelopmentGoal, DevelopmentGoalError, updateDevelopmentGoalAsValidator } from "./development-goals";
 import { ForbiddenError, NotFoundError, type Viewer } from "./permissions";
 import { loadDocumentWorkflow, transitionDocument, WorkflowError, type WorkflowReader, type WorkflowWriter } from "./workflow";
 
@@ -30,7 +35,15 @@ interface State {
   documents: { id: number; employeeId: number; cycleId: number; status: DocumentStatusValue; validatorId: number | null }[];
   templates: { id: number; cycleId: number; type: string }[];
   acks: { documentId: number; templateId: number; hsCommitment: string | null }[];
-  performanceGoals: { id: number; documentId: number; state: string; weight: number | null; progress: number }[];
+  performanceGoals: {
+    id: number;
+    documentId: number;
+    state: string;
+    weight: number | null;
+    progress: number;
+    title?: string;
+    changedByManager?: boolean;
+  }[];
   developmentGoals: { id: number; documentId: number; state: string; progress: number }[];
   history: { id: number; documentId: number; fromStatus: string | null; toStatus: string; authorId: number; comment: string | null; createdAt: Date }[];
   audit: Row[];
@@ -194,6 +207,8 @@ function createFakeDb(initial: State, options: FakeOptions = {}) {
       findMany: async ({ where }: { where: unknown }) => state.acks.filter((a) => matches(a, where)),
     },
     performanceGoal: goalTable(() => state.performanceGoals),
+    // Only the default "Tekst" type: enough for a draft goal's full-replace edit.
+    targetType: { findMany: async () => [{ id: 1, code: "TEKST", isNumeric: false }] },
     developmentGoal: goalTable(() => state.developmentGoals),
     documentStatusHistory: {
       create: async ({ data }: { data: Omit<State["history"][number], "id" | "createdAt"> }) => {
@@ -550,6 +565,117 @@ describe("edit locks (WF-02, WF-05)", () => {
       400,
     );
     expect(approved.state.audit).toEqual([]);
+  });
+});
+
+describe("N+1 changes goals during validation (WF-04)", () => {
+  /** A's document in `status`, with draft goal 202 titled "Draft" and not yet flagged. */
+  function wf04Seed(status: DocumentStatusValue): State {
+    const initial = seed(status);
+    initial.performanceGoals = initial.performanceGoals.map((g) =>
+      g.id === 202 ? { ...g, title: "Draft", changedByManager: false } : g,
+    );
+    return initial;
+  }
+  const edit = { goalId: 202, goal: { title: "Clarified by N+1" } };
+
+  it("the validator changes a goal: state kept, flag set, audit has the previous and the new values", async () => {
+    const fake = createFakeDb(wf04Seed("DO_WALIDACJI"));
+    const updated = await updatePerformanceGoalAsValidator(fake.as(viewer(M1)), viewer(M1), edit);
+    expect(updated).toMatchObject({ id: 202, title: "Clarified by N+1", state: "SZKIC", changedByManager: true });
+    expect(fake.state.audit).toEqual([
+      expect.objectContaining({
+        actorId: M1,
+        entity: "performance_goal",
+        entityId: "202",
+        action: "UPDATE_BY_MANAGER",
+        before: expect.objectContaining({ documentId: DOC_A, title: "Draft", state: "SZKIC", changedByManager: false }),
+        after: expect.objectContaining({ documentId: DOC_A, title: "Clarified by N+1", state: "SZKIC", changedByManager: true }),
+      }),
+    ]);
+
+    // Saving the same content again writes nothing.
+    await updatePerformanceGoalAsValidator(fake.as(viewer(M1)), viewer(M1), edit);
+    expect(fake.state.audit).toHaveLength(1);
+  });
+
+  it("the HR-set override validator edits too; a goal in the plan stays in the plan (WF-09)", async () => {
+    const fake = createFakeDb(seed("SZKIC", "DO_WALIDACJI"));
+    const goal = {
+      title: "Ship line 3",
+      description: "Commission line 3.",
+      measures: "Line running",
+      dueDate: "2027-11-30",
+      progress: "DO_ROZPOCZECIA",
+      targetTypeId: 1,
+      target: "Running",
+      weight: 100,
+    };
+    const updated = await updatePerformanceGoalAsValidator(fake.as(viewer(OV)), viewer(OV), { goalId: 210, goal });
+    expect(updated).toMatchObject({ state: "W_PLANIE", title: "Ship line 3", changedByManager: true });
+    expect(fake.state.audit).toEqual([expect.objectContaining({ actorId: OV, action: "UPDATE_BY_MANAGER" })]);
+    // The override validates in addition to the direct manager (permissions.ts), so N+1 may edit too.
+    const byManager = await updatePerformanceGoalAsValidator(fake.as(viewer(M1)), viewer(M1), {
+      goalId: 210,
+      goal: { ...goal, weight: 90 },
+    });
+    expect(byManager).toMatchObject({ weight: 90, changedByManager: true });
+    expect(fake.state.audit.map((row) => row.actorId)).toEqual([OV, M1]);
+  });
+
+  it("the edit button is offered to the validator only, and only while the document is in validation", async () => {
+    const inValidation = createFakeDb(wf04Seed("DO_WALIDACJI"));
+    const canEdit = async (fake: ReturnType<typeof createFakeDb>, id: number, cycle: "OTWARTY" | "ZAMKNIETY" = "OTWARTY") =>
+      (await loadDocumentWorkflow(fake.as(viewer(id)), viewer(id), DOC_A, cycle)).canValidatorEditGoals;
+    expect(await canEdit(inValidation, M1)).toBe(true);
+    expect(await canEdit(inValidation, M1, "ZAMKNIETY")).toBe(false);
+    for (const id of [A, N2, HR]) expect(await canEdit(inValidation, id)).toBe(false);
+    expect(await canEdit(createFakeDb(wf04Seed("ZWROCONY")), M1)).toBe(false);
+  });
+
+  it("only the validator: not the owner, N+2, HR or someone who cannot see the document", async () => {
+    const fake = createFakeDb(wf04Seed("DO_WALIDACJI"));
+    for (const id of [A, N2, HR]) {
+      expect(await rejection(updatePerformanceGoalAsValidator(fake.as(viewer(id)), viewer(id), edit))).toBeInstanceOf(ForbiddenError);
+      const development = updateDevelopmentGoalAsValidator(fake.as(viewer(id)), viewer(id), {
+        goalId: 300,
+        goal: { competencyId: 1, actionTitle: "x" },
+      });
+      expect(await rejection(development)).toBeInstanceOf(ForbiddenError);
+    }
+    expect(await rejection(updatePerformanceGoalAsValidator(fake.as(viewer(B)), viewer(B), edit))).toBeInstanceOf(NotFoundError);
+    expect(fake.state.performanceGoals.find((g) => g.id === 202)).toMatchObject({ title: "Draft", changedByManager: false });
+    expect(fake.state.audit).toEqual([]);
+  });
+
+  it("only during validation and in an open cycle (409 NOT_EDITABLE otherwise)", async () => {
+    const closed = wf04Seed("DO_WALIDACJI");
+    closed.cycle.status = "ZAMKNIETY";
+    const cases = [wf04Seed("SZKIC"), wf04Seed("ZWROCONY"), wf04Seed("ZATWIERDZONY"), closed];
+    for (const initial of cases) {
+      const fake = createFakeDb(initial);
+      const performance = await rejection(updatePerformanceGoalAsValidator(fake.as(viewer(M1)), viewer(M1), edit));
+      expect(performance).toBeInstanceOf(PerformanceGoalError);
+      expect(performance).toMatchObject({ code: "NOT_EDITABLE", status: 409 });
+      const development = await rejection(
+        updateDevelopmentGoalAsValidator(fake.as(viewer(M1)), viewer(M1), { goalId: 300, goal: { competencyId: 1, actionTitle: "x" } }),
+      );
+      expect(development).toBeInstanceOf(DevelopmentGoalError);
+      expect(development).toMatchObject({ code: "NOT_EDITABLE", status: 409 });
+      expect(fake.state.audit).toEqual([]);
+    }
+  });
+
+  it("a cancelled goal stays frozen; a state or save mode in the payload is refused", async () => {
+    const initial = wf04Seed("DO_WALIDACJI");
+    initial.performanceGoals = initial.performanceGoals.map((g) => (g.id === 202 ? { ...g, state: "ANULOWANY" } : g));
+    const fake = createFakeDb(initial);
+    const cancelled = await rejection(updatePerformanceGoalAsValidator(fake.as(viewer(M1)), viewer(M1), edit));
+    expect(cancelled).toMatchObject({ code: "GOAL_CANCELLED", status: 409 });
+    for (const input of [{ ...edit, mode: "PLAN" }, { goalId: 202, goal: { title: "x", state: "W_PLANIE" } }]) {
+      const refused = await rejection(updatePerformanceGoalAsValidator(fake.as(viewer(M1)), viewer(M1), input));
+      expect(refused).toMatchObject({ code: "INVALID_INPUT", status: 400 });
+    }
   });
 });
 

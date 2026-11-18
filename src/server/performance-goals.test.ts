@@ -21,6 +21,7 @@ import {
   performanceGoalHttpStatus,
   PerformanceGoalError,
   updatePerformanceGoal,
+  updatePerformanceGoalAsValidator,
 } from "./performance-goals";
 import { ForbiddenError, NotFoundError, type Viewer } from "./permissions";
 
@@ -232,6 +233,15 @@ describe("server operations - an invalid payload is a 400 before any database ca
     await expect400(
       updatePerformanceGoal(untouchable, viewer, { goalId: 1, mode: "DRAFT", goal: { title: "x", weight } }),
       "WEIGHT_INVALID",
+    );
+    await expect400(updatePerformanceGoalAsValidator(untouchable, viewer, { goalId: 1, goal: { title: "x", weight } }), "WEIGHT_INVALID");
+  });
+
+  it("[WF-04] the validator's payload carries no save mode, state or flag", async () => {
+    await expect400(updatePerformanceGoalAsValidator(untouchable, viewer, { goalId: 1, mode: "PLAN", goal: FULL_GOAL }), "INVALID_INPUT");
+    await expect400(
+      updatePerformanceGoalAsValidator(untouchable, viewer, { goalId: 1, goal: { ...FULL_GOAL, changedByManager: false } }),
+      "INVALID_INPUT",
     );
   });
 
@@ -511,5 +521,59 @@ describe.skipIf(!hasTestDb)("performance goals - database", () => {
       409,
     );
     expect(await db.performanceGoal.count()).toBe(1);
+  });
+
+  it("[WF-04] N+1 changes a goal in validation: flag, counters and an audited before/after; the owner keeps seeing it", async () => {
+    const documentId = await ownDocument("A");
+    const goal = await createPerformanceGoal(db, as("A"), { documentId, mode: "PLAN", goal: planGoal() });
+    await db.gedpDocument.update({ where: { id: documentId }, data: { status: "DO_WALIDACJI" } });
+
+    const changed = await updatePerformanceGoalAsValidator(db, as("M1"), {
+      goalId: goal.id,
+      goal: { ...planGoal(), weight: 30, title: "Sharper goal" },
+    });
+    expect(changed).toMatchObject({ state: "W_PLANIE", weight: 30, title: "Sharper goal", changedByManager: true });
+    expect((await loadPerformanceGoals(db, as("M1"), documentId, "OTWARTY")).counters.changedByManager).toBe(1);
+
+    const audit = await db.auditLog.findFirstOrThrow({ where: { entity: "performance_goal", action: "UPDATE_BY_MANAGER" } });
+    expect(audit).toMatchObject({
+      actorId: id("M1"),
+      before: { documentId, title: FULL_GOAL.title, weight: 40, changedByManager: false },
+      after: { documentId, title: "Sharper goal", weight: 30, changedByManager: true },
+    });
+
+    // A goal in the plan stays complete; a missing field is refused like "Dodaj do planu".
+    await expectCode(
+      updatePerformanceGoalAsValidator(db, as("M1"), { goalId: goal.id, goal: { ...planGoal(), description: "" } }),
+      "DESCRIPTION_REQUIRED",
+      400,
+    );
+
+    // After the return the owner sees the marker and the counter.
+    await db.gedpDocument.update({ where: { id: documentId }, data: { status: "ZWROCONY" } });
+    const ownerView = await loadPerformanceGoals(db, as("A"), documentId, "OTWARTY");
+    expect(ownerView.goals[0]?.changedByManager).toBe(true);
+    expect(ownerView.counters.changedByManager).toBe(1);
+    await expectCode(
+      updatePerformanceGoalAsValidator(db, as("M1"), { goalId: goal.id, goal: planGoal() }),
+      "NOT_EDITABLE",
+      409,
+    );
+  });
+
+  it("[WF-04] only the validator writes during validation: not the owner, a colleague or HR", async () => {
+    const documentId = await ownDocument("A");
+    const goal = await createPerformanceGoal(db, as("A"), { documentId, mode: "PLAN", goal: planGoal() });
+    await db.gedpDocument.update({ where: { id: documentId }, data: { status: "DO_WALIDACJI" } });
+    const input = { goalId: goal.id, goal: { ...planGoal(), title: "Hijack" } };
+
+    await expect(updatePerformanceGoalAsValidator(db, as("A"), input)).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(updatePerformanceGoalAsValidator(db, as("HR"), input)).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(updatePerformanceGoalAsValidator(db, as("B"), input)).rejects.toBeInstanceOf(NotFoundError);
+    expect(await db.performanceGoal.findUniqueOrThrow({ where: { id: goal.id } })).toMatchObject({
+      title: FULL_GOAL.title,
+      changedByManager: false,
+    });
+    expect(await db.auditLog.count({ where: { action: "UPDATE_BY_MANAGER" } })).toBe(0);
   });
 });

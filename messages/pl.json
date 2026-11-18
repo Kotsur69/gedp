@@ -328,6 +328,7 @@
     },
     "actionErrors": {
       "NOT_EDITABLE": "Tego celu nie można już zmienić – dokument został wysłany albo cykl jest zamknięty.",
+      "VALIDATOR_NOT_EDITABLE": "Tego celu nie można już zmienić – dokument nie czeka już na walidację albo cykl jest zamknięty.",
       "GOAL_CANCELLED": "Ten cel jest anulowany i nie można go zmienić.",
       "DOCUMENT_ALREADY_SENT": "Dokument był już wysłany do walidacji – cel można tylko anulować.",
       "DOCUMENT_NOT_SENT": "Cel można anulować dopiero po wysłaniu dokumentu. Wcześniej możesz go usunąć.",
@@ -420,6 +421,7 @@
     },
     "actionErrors": {
       "NOT_EDITABLE": "Tego celu nie można już zmienić – dokument został wysłany albo cykl jest zamknięty.",
+      "VALIDATOR_NOT_EDITABLE": "Tego celu nie można już zmienić – dokument nie czeka już na walidację albo cykl jest zamknięty.",
       "GOAL_CANCELLED": "Ten cel jest anulowany i nie można go zmienić.",
       "DOCUMENT_ALREADY_SENT": "Dokument był już wysłany do walidacji – cel można tylko anulować.",
       "DOCUMENT_NOT_SENT": "Cel można anulować dopiero po wysłaniu dokumentu. Wcześniej możesz go usunąć.",
@@ -522,7 +524,9 @@
     "emptyLevel": "Na tym poziomie nikogo nie ma.",
     "truncated": "Lista pokazuje pierwsze {limit} osób. Zawęź ją filtrem poziomu.",
     "modeValidate": "Tryb walidacji",
-    "modeReadOnly": "Podgląd – tylko do odczytu"
+    "modeReadOnly": "Podgląd – tylko do odczytu",
+    "editGoal": "Zmień cel: {title}",
+    "validatorEditNotice": "Jako walidator możesz zmienić cele wydajnościowe i rozwojowe pracownika. Zmieniony cel dostaje znacznik „Zmieniony przez N+1”, a poprzednia i nowa wartość trafiają do dziennika audytu."
   },
   "admin": {
     "title": "Panel administratora",

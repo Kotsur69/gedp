@@ -4,6 +4,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { CycleStatus, DocumentStatus } from "@/generated/prisma/enums";
 import {
   availableActions,
+  canValidatorEditGoals,
   findTransition,
   isCommentRequired,
   isDocumentStatus,
@@ -25,7 +26,7 @@ import {
   type Viewer,
 } from "@/server/permissions";
 
-// Document workflow on the server (WF-01..03, WF-05, WF-06). The rules - which transitions exist,
+// Document workflow on the server (WF-01..06). The rules - which transitions exist,
 // who makes them, what needs a comment or the closing conditions - live in
 // src/domain/document-status.ts; this module enforces them.
 //
@@ -241,6 +242,8 @@ export interface DocumentWorkflowView {
   actions: WorkflowAction[];
   /** Only when the viewer can send: unmet closing conditions, in slide order. */
   missing: MissingCondition[];
+  /** WF-04: the viewer validates this document and may change its goals right now. */
+  canValidatorEditGoals: boolean;
   /** Oldest first. */
   history: StatusHistoryEntry[];
 }
@@ -281,6 +284,8 @@ export async function loadDocumentWorkflow(
     isOwner,
     actions,
     missing,
+    canValidatorEditGoals:
+      access.permissions.validate && canValidatorEditGoals(access.status, cycleStatus === "OTWARTY"),
     history: rows.map(({ author, ...row }) => ({ ...row, authorName: `${author.firstName} ${author.lastName}` })),
   };
 }

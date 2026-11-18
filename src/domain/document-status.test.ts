@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   availableActions,
+  canValidatorEditGoals,
   CLOSING_CONDITION_COUNT,
   closingProgress,
   DOCUMENT_STATUSES,
@@ -77,6 +78,11 @@ describe("edit locks (WF-02, WF-05, Q-13)", () => {
 
   it("a cycle that is not open is view only whatever the status", () => {
     expect(DOCUMENT_STATUSES.map((status) => goalEditScope(status, false))).toEqual(["NONE", "NONE", "NONE", "NONE"]);
+  });
+
+  it("[WF-04] the validator edits goals only while the document is in validation and the cycle is open", () => {
+    expect(DOCUMENT_STATUSES.filter((status) => canValidatorEditGoals(status, true))).toEqual(["DO_WALIDACJI"]);
+    expect(DOCUMENT_STATUSES.filter((status) => canValidatorEditGoals(status, false))).toEqual([]);
   });
 
   it("derives the editable statuses from the same table", () => {

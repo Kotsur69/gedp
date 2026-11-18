@@ -9,9 +9,12 @@ import type { PerformanceGoalView } from "@/server/performance-goals";
 import { catalogName, displayDate, PROGRESS_LABEL_KEY } from "../../development/goal-format";
 import { Panel } from "../../goal-centre-ui";
 import { isUnitCode } from "../../performance/goal-format";
+import { EditGoalButton } from "./validator-goal-editor";
 
-// Read-only summary of the three parts for the validator (WF-03, WF-22). Server-rendered, no
-// handlers: the validator decides in the status panel; goal changes by N+1 (WF-04) come later.
+// Summary of the three parts for the validator (WF-03, WF-22). Server-rendered: the validator
+// decides in the status panel. WF-04: while the document is in validation, `canEdit` adds a pencil
+// to each performance and development goal (validator-goal-editor.tsx); changed goals carry the
+// "Zmieniony przez N+1" marker and each part shows how many N+1 has changed.
 
 const ROW = "rounded-2xl border border-line bg-surface p-4 sm:p-5";
 
@@ -31,6 +34,24 @@ function Fact({ label, isWide = false, children }: { label: string; isWide?: boo
 function StateChip({ text, isMuted }: { text: string; isMuted: boolean }) {
   const tone = isMuted ? "border-line text-ink-soft" : "border-accent/50 text-accent";
   return <span className={`rounded-lg border px-2 py-0.5 text-xs font-semibold ${tone}`}>{text}</span>;
+}
+
+/** WF-04 marker; the same orange notice tone as the "Zmienione przez N+1" counters. */
+const MANAGER_TONE = "border-brand-orange/60 bg-notice-surface text-notice";
+
+function ManagerChangeChip({ text }: { text: string }) {
+  return <span className={`rounded-lg border px-2 py-0.5 text-xs font-semibold ${MANAGER_TONE}`}>{text}</span>;
+}
+
+/** State, the WF-04 marker and, in validation, the edit pencil - top right of a goal row. */
+function RowBadges({ children }: { children: ReactNode }) {
+  return <div className="flex flex-wrap items-center justify-end gap-2">{children}</div>;
+}
+
+/** "Zmienione przez N+1: n" next to a part's heading; muted while nothing has changed. */
+function ChangedCounter({ text, count }: { text: string; count: number }) {
+  const tone = count > 0 ? MANAGER_TONE : "border-line-strong text-ink-soft";
+  return <p className={`rounded-full border px-3 py-1 text-sm font-semibold tabular-nums ${tone}`}>{text}</p>;
 }
 
 export async function GroupGoalsReview({ goals, locale }: { goals: readonly GroupGoalView[]; locale: Locale }) {
@@ -70,20 +91,31 @@ export async function GroupGoalsReview({ goals, locale }: { goals: readonly Grou
   );
 }
 
-type PerformanceProps = { goals: readonly PerformanceGoalView[]; totalWeight: number; locale: Locale };
+type PerformanceProps = {
+  goals: readonly PerformanceGoalView[];
+  totalWeight: number;
+  /** "Zmienione przez N+1" of this part (cancelled goals excluded, as on the owner's page). */
+  changedCount: number;
+  /** WF-04: the viewer validates and the document is in validation. */
+  canEdit: boolean;
+  locale: Locale;
+};
 
-export async function PerformanceGoalsReview({ goals, totalWeight, locale }: PerformanceProps) {
+export async function PerformanceGoalsReview({ goals, totalWeight, changedCount, canEdit, locale }: PerformanceProps) {
   const t = await getTranslations();
   const notSet = t("performanceGoals.notSet");
   return (
     <Panel labelledBy="review-part2">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 id="review-part2" className="text-2xl font-semibold text-ink">
           {t("performanceGoals.sectionTitle")}
         </h2>
-        <p className="text-sm font-semibold text-ink tabular-nums">
-          {t("goalCentre.counters.totalWeight", { weight: totalWeight })}
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <ChangedCounter text={t("goalCentre.counters.changedByManager", { count: changedCount })} count={changedCount} />
+          <p className="text-sm font-semibold text-ink tabular-nums">
+            {t("goalCentre.counters.totalWeight", { weight: totalWeight })}
+          </p>
+        </div>
       </div>
       {goals.length === 0 ? (
         <p className="mt-3 text-ink-soft">{t("team.noGoals")}</p>
@@ -96,7 +128,11 @@ export async function PerformanceGoalsReview({ goals, totalWeight, locale }: Per
               <li key={goal.id} className={`${ROW} ${goal.state === "ANULOWANY" ? "opacity-70" : ""}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <h3 className="min-w-0 font-semibold break-words text-ink">{goal.title}</h3>
-                  <StateChip isMuted={goal.state !== "W_PLANIE"} text={t(`glossary.goalState.${goal.state}`)} />
+                  <RowBadges>
+                    <StateChip isMuted={goal.state !== "W_PLANIE"} text={t(`glossary.goalState.${goal.state}`)} />
+                    {goal.changedByManager && <ManagerChangeChip text={t("glossary.changedByManager")} />}
+                    {canEdit && goal.state !== "ANULOWANY" && <EditGoalButton goalId={goal.id} title={goal.title} />}
+                  </RowBadges>
                 </div>
                 {goal.description && (
                   <p className="mt-2 max-w-3xl text-sm leading-relaxed whitespace-pre-line text-ink-soft">
@@ -124,16 +160,25 @@ export async function PerformanceGoalsReview({ goals, totalWeight, locale }: Per
   );
 }
 
-type DevelopmentProps = { goals: readonly DevelopmentGoalView[]; context: DevelopmentGoalContext; locale: Locale };
+type DevelopmentProps = {
+  goals: readonly DevelopmentGoalView[];
+  context: DevelopmentGoalContext;
+  changedCount: number;
+  canEdit: boolean;
+  locale: Locale;
+};
 
-export async function DevelopmentGoalsReview({ goals, context, locale }: DevelopmentProps) {
+export async function DevelopmentGoalsReview({ goals, context, changedCount, canEdit, locale }: DevelopmentProps) {
   const t = await getTranslations();
   const notSet = t("performanceGoals.notSet");
   return (
     <Panel labelledBy="review-part3">
-      <h2 id="review-part3" className="text-2xl font-semibold text-ink">
-        {t("developmentGoals.sectionTitle")}
-      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="review-part3" className="text-2xl font-semibold text-ink">
+          {t("developmentGoals.sectionTitle")}
+        </h2>
+        <ChangedCounter text={t("goalCentre.counters.changedByManager", { count: changedCount })} count={changedCount} />
+      </div>
       {goals.length === 0 ? (
         <p className="mt-3 text-ink-soft">{t("team.noGoals")}</p>
       ) : (
@@ -148,7 +193,11 @@ export async function DevelopmentGoalsReview({ goals, context, locale }: Develop
               <li key={goal.id} className={`${ROW} ${goal.state === "ANULOWANY" ? "opacity-70" : ""}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <h3 className="min-w-0 font-semibold break-words text-ink">{competency}</h3>
-                  <StateChip isMuted={goal.state !== "W_PLANIE"} text={t(`glossary.goalState.${goal.state}`)} />
+                  <RowBadges>
+                    <StateChip isMuted={goal.state !== "W_PLANIE"} text={t(`glossary.goalState.${goal.state}`)} />
+                    {goal.changedByManager && <ManagerChangeChip text={t("glossary.changedByManager")} />}
+                    {canEdit && goal.state !== "ANULOWANY" && <EditGoalButton goalId={goal.id} title={goal.actionTitle || competency} />}
+                  </RowBadges>
                 </div>
                 <p className="mt-1 text-sm text-ink-soft">{area}</p>
                 <Facts>

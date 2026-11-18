@@ -16,6 +16,7 @@ import {
   loadDevelopmentGoalContext,
   loadDevelopmentGoals,
   updateDevelopmentGoal,
+  updateDevelopmentGoalAsValidator,
 } from "./development-goals";
 import { ensureOwnDocument } from "./group-goals";
 import { HIERARCHY_TX_OPTIONS, rebuildHierarchy } from "./hierarchy";
@@ -186,6 +187,12 @@ describe("server operations - an invalid payload is a 400 before any database ca
     );
     await expect400(deleteDevelopmentGoal(untouchable, viewer, { goalId: "1" }), "INVALID_INPUT");
     await expect400(cancelDevelopmentGoal(untouchable, viewer, { goalId: 1, state: "W_PLANIE" }), "INVALID_INPUT");
+    // WF-04: the validator's payload has no save mode and is checked like any other.
+    await expect400(updateDevelopmentGoalAsValidator(untouchable, viewer, { goalId: 1, mode: "PLAN", goal: FULL_GOAL }), "INVALID_INPUT");
+    await expect400(
+      updateDevelopmentGoalAsValidator(untouchable, viewer, { goalId: 1, goal: { ...FULL_GOAL, weight: 30 } }),
+      "INVALID_INPUT",
+    );
   });
 
   it("maps access errors to 404 / 403, rule conflicts to 409 and anything else to 500", () => {
@@ -373,5 +380,35 @@ describe.skipIf(!hasTestDb)("development goals - database", () => {
       "NOT_EDITABLE",
       409,
     );
+  });
+
+  it("[WF-04] N+1 changes a goal in validation: flag, counter and an audited before/after; nobody else may", async () => {
+    const documentId = await ownDocument("A");
+    const goal = await createDevelopmentGoal(db, as("A"), { documentId, mode: "PLAN", goal: planGoal() });
+    const input = { goalId: goal.id, goal: { ...planGoal(), actionTitle: "Lead the line 2 pilot" } };
+
+    await expectCode(updateDevelopmentGoalAsValidator(db, as("M1"), input), "NOT_EDITABLE", 409);
+    await db.gedpDocument.update({ where: { id: documentId }, data: { status: "DO_WALIDACJI" } });
+    await expect(updateDevelopmentGoalAsValidator(db, as("A"), input)).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(updateDevelopmentGoalAsValidator(db, as("HR"), input)).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(updateDevelopmentGoalAsValidator(db, as("B"), input)).rejects.toBeInstanceOf(NotFoundError);
+
+    const changed = await updateDevelopmentGoalAsValidator(db, as("M1"), input);
+    expect(changed).toMatchObject({ state: "W_PLANIE", actionTitle: "Lead the line 2 pilot", changedByManager: true });
+    // The same content again writes nothing.
+    await updateDevelopmentGoalAsValidator(db, as("M1"), input);
+
+    const audit = await db.auditLog.findMany({ where: { entity: "development_goal", action: "UPDATE_BY_MANAGER" } });
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({
+      actorId: id("M1"),
+      before: { documentId, actionTitle: FULL_GOAL.actionTitle, changedByManager: false },
+      after: { documentId, actionTitle: "Lead the line 2 pilot", changedByManager: true },
+    });
+
+    await db.gedpDocument.update({ where: { id: documentId }, data: { status: "ZATWIERDZONY" } });
+    const ownerView = await loadDevelopmentGoals(db, as("A"), documentId, "OTWARTY");
+    expect(ownerView.counters.changedByManager).toBe(1);
+    expect(ownerView.goals[0]?.changedByManager).toBe(true);
   });
 });

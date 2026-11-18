@@ -10,6 +10,7 @@ import {
   deleteDevelopmentGoal,
   DevelopmentGoalError,
   updateDevelopmentGoal,
+  updateDevelopmentGoalAsValidator,
   type DevelopmentGoalErrorCode,
 } from "@/server/development-goals";
 import { isAccessError } from "@/server/permissions";
@@ -70,6 +71,12 @@ export async function createDevelopmentGoalAction(input: unknown): Promise<Devel
 export async function updateDevelopmentGoalAction(input: unknown): Promise<DevelopmentGoalActionResult> {
   const viewer = await requireEmployee();
   return run("update", () => updateDevelopmentGoal(db(), viewer, input));
+}
+
+/** WF-04: the validator saves a changed goal while the document is in validation. */
+export async function updateDevelopmentGoalAsValidatorAction(input: unknown): Promise<DevelopmentGoalActionResult> {
+  const viewer = await requireEmployee();
+  return run("validator update", () => updateDevelopmentGoalAsValidator(db(), viewer, input));
 }
 
 /** Card trash icon - before the document is sent. */

@@ -1,26 +1,30 @@
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ChevronLeftIcon, EyeIcon, PencilIcon } from "@/components/shell/icons";
 import { DocumentStatusPanel } from "@/components/workflow/document-status-panel";
 import type { Locale } from "@/i18n/config";
 import { requireEmployee } from "@/server/current-employee";
 import { db } from "@/server/db";
-import { loadDevelopmentGoalContext, loadDevelopmentGoals } from "@/server/development-goals";
+import type { DevelopmentGoalContext } from "@/domain/development-goal";
+import { loadDevelopmentGoalContext, loadDevelopmentGoals, type DevelopmentGoalView } from "@/server/development-goals";
 import { loadGroupGoals } from "@/server/group-goals";
 import { requireTab } from "@/server/navigation";
-import { loadPerformanceGoals } from "@/server/performance-goals";
+import { loadGoalFormContext, loadPerformanceGoals, type PerformanceGoalView } from "@/server/performance-goals";
 import { isAccessError, requireDocumentPermission } from "@/server/permissions";
 import { loadDocumentWorkflow } from "@/server/workflow";
 import { Panel } from "../../goal-centre-ui";
 import { DevelopmentGoalsReview, GroupGoalsReview, PerformanceGoalsReview } from "./document-review";
+import { DevelopmentGoalEditor, PerformanceGoalEditor } from "./validator-goal-editor";
 
-// A report's document from "Mój zespół" (WF-03, WF-22): every part read-only, then the status
-// panel. Validate mode ("Zatwierdź" / "Zwróć do poprawy") only when the permission module says
+// A report's document from "Mój zespół" (WF-03, WF-22): the parts, then the status panel.
+// Validate mode ("Zatwierdź" / "Zwróć do poprawy") only when the permission module says
 // canValidate (live N+1 or WF-09 override); anyone else who may view it (N+2 and above) gets the
-// read-only preview; anyone who may not gets 404, never "forbidden".
+// read-only preview; anyone who may not gets 404, never "forbidden". WF-04: while the document is
+// in validation the validator may also change performance and development goals.
 
 type Props = { params: Promise<{ documentId: string }> };
 
@@ -71,6 +75,25 @@ async function TeamDocument({ params }: Props) {
   ]);
   const employeeName = `${employee.firstName} ${employee.lastName}`;
   const displayLocale = locale as Locale;
+  const canEditGoals = workflow.canValidatorEditGoals;
+  const performanceReview = (
+    <PerformanceGoalsReview
+      goals={part2.goals}
+      totalWeight={part2.counters.totalWeightInPlan}
+      changedCount={part2.counters.changedByManager}
+      canEdit={canEditGoals}
+      locale={displayLocale}
+    />
+  );
+  const developmentReview = (
+    <DevelopmentGoalsReview
+      goals={part3.goals}
+      context={developmentContext}
+      changedCount={part3.counters.changedByManager}
+      canEdit={canEditGoals}
+      locale={displayLocale}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -102,8 +125,69 @@ async function TeamDocument({ params }: Props) {
       <DocumentStatusPanel workflow={workflow} titleId="team-document-status" />
 
       <GroupGoalsReview goals={part1.goals} locale={displayLocale} />
-      <PerformanceGoalsReview goals={part2.goals} totalWeight={part2.counters.totalWeightInPlan} locale={displayLocale} />
-      <DevelopmentGoalsReview goals={part3.goals} context={developmentContext} locale={displayLocale} />
+      {canEditGoals ? (
+        <ValidatorEditing
+          documentId={documentId}
+          cycleYear={cycle.year}
+          part2={part2.goals}
+          part3={part3.goals}
+          developmentContext={developmentContext}
+          performanceReview={performanceReview}
+          developmentReview={developmentReview}
+        />
+      ) : (
+        <>
+          {performanceReview}
+          {developmentReview}
+        </>
+      )}
     </div>
+  );
+}
+
+type EditingProps = {
+  documentId: number;
+  cycleYear: number;
+  part2: readonly PerformanceGoalView[];
+  part3: readonly DevelopmentGoalView[];
+  developmentContext: DevelopmentGoalContext;
+  performanceReview: ReactNode;
+  developmentReview: ReactNode;
+};
+
+/** WF-04: the two goal parts inside their editors, with the messages the goal windows render. */
+async function ValidatorEditing(props: EditingProps) {
+  const { documentId, cycleYear, part2, part3, developmentContext, performanceReview, developmentReview } = props;
+  // Types the goals already use stay selectable even if HR has deactivated them.
+  const usedTypeIds = part2.flatMap((goal) => (goal.targetTypeId === null ? [] : [goal.targetTypeId]));
+  const [performanceContext, messages, t] = await Promise.all([
+    loadGoalFormContext(db(), cycleYear, usedTypeIds),
+    getMessages(),
+    getTranslations("team"),
+  ]);
+  // The client part gets only the messages it renders.
+  const { performanceGoals, developmentGoals, goalControls, goalCentre, glossary, common, workflow, team } = messages;
+  const clientMessages = {
+    performanceGoals,
+    developmentGoals,
+    goalControls,
+    goalCentre,
+    glossary,
+    common,
+    workflow,
+    team: { editGoal: team.editGoal },
+  };
+  return (
+    <NextIntlClientProvider messages={clientMessages}>
+      <p className="rounded-2xl border border-brand-orange/60 bg-notice-surface px-5 py-4 text-sm leading-relaxed font-semibold text-notice">
+        {t("validatorEditNotice")}
+      </p>
+      <PerformanceGoalEditor documentId={documentId} goals={part2} context={performanceContext}>
+        {performanceReview}
+      </PerformanceGoalEditor>
+      <DevelopmentGoalEditor documentId={documentId} goals={part3} context={developmentContext}>
+        {developmentReview}
+      </DevelopmentGoalEditor>
+    </NextIntlClientProvider>
   );
 }

@@ -20,6 +20,7 @@ import {
   createPerformanceGoalAction,
   deletePerformanceGoalAction,
   updatePerformanceGoalAction,
+  updatePerformanceGoalAsValidatorAction,
   type PerformanceGoalActionErrorCode,
   type PerformanceGoalActionResult,
 } from "./actions";
@@ -54,6 +55,8 @@ type DialogProps = {
   documentId: number | null;
   canChange: boolean;
   wasSent: boolean;
+  /** WF-04: the validator edits during validation - content only, no plan or cancel buttons. */
+  isValidator?: boolean;
   onClosed: () => void;
 };
 
@@ -123,7 +126,7 @@ type BodyProps = Omit<DialogProps, "target" | "onClosed"> & {
 };
 
 function DialogBody(props: BodyProps) {
-  const { target, goals, context, documentId, canChange, wasSent, cancelRequestRef, requestClose } = props;
+  const { target, goals, context, documentId, canChange, wasSent, isValidator = false, cancelRequestRef, requestClose } = props;
   const t = useTranslations("performanceGoals");
   const tCentre = useTranslations("goalCentre");
   const tCommon = useTranslations("common");
@@ -201,11 +204,13 @@ function DialogBody(props: BodyProps) {
       return;
     }
     const payload = form.payload;
-    run(() =>
-      goal
+    run(() => {
+      // WF-04: the validator's save never changes the goal's state, so it sends no mode.
+      if (goal && isValidator) return updatePerformanceGoalAsValidatorAction({ goalId: goal.id, goal: payload });
+      return goal
         ? updatePerformanceGoalAction({ goalId: goal.id, mode: saveMode, goal: payload })
-        : createPerformanceGoalAction({ documentId, mode: saveMode, goal: payload }),
-    );
+        : createPerformanceGoalAction({ documentId, mode: saveMode, goal: payload });
+    });
   };
 
   /** "Zamknij": with unsaved changes it asks first (G2-20). */
@@ -240,7 +245,9 @@ function DialogBody(props: BodyProps) {
   const heading = goal ? goal.title : t("newGoal");
   const mayChange = canChange && documentId !== null && goal?.state !== "ANULOWANY";
   const isInPlan = goal?.state === "W_PLANIE";
-  const showPlanHint = mode === "edit" && !isInPlan && !form.canAddToPlan;
+  // The validator only changes content: no "Dodaj do planu", no "Anuluj cel".
+  const mayAddToPlan = !isInPlan && !isValidator;
+  const showPlanHint = mode === "edit" && mayAddToPlan && !form.canAddToPlan;
   const confirmText = {
     confirmDelete: tCentre("deleteConfirm"),
     confirmCancel: tCentre("cancelConfirm"),
@@ -287,7 +294,9 @@ function DialogBody(props: BodyProps) {
         )}
         {actionError && (
           <p id={ERROR_ID} role="alert" tabIndex={-1} className="mt-4 text-sm font-semibold text-danger focus:outline-none">
-            {t(`actionErrors.${actionErrorKey(actionError)}`)}
+            {isValidator && actionError === "NOT_EDITABLE"
+              ? t("actionErrors.VALIDATOR_NOT_EDITABLE")
+              : t(`actionErrors.${actionErrorKey(actionError)}`)}
           </p>
         )}
       </div>
@@ -300,7 +309,7 @@ function DialogBody(props: BodyProps) {
         )}
         {mode === "view" && (
           <>
-            {mayChange && wasSent && (
+            {mayChange && wasSent && !isValidator && (
               <GoalActionButton variant="danger" onClick={() => switchMode("confirmCancel", CONFIRM_NO_ID)}>
                 {tCentre("cancelGoal")}
               </GoalActionButton>
@@ -318,13 +327,13 @@ function DialogBody(props: BodyProps) {
               {tCommon("close")}
             </GoalActionButton>
             <GoalActionButton
-              variant={isInPlan ? "primary" : "secondary"}
+              variant={mayAddToPlan ? "secondary" : "primary"}
               onClick={() => handleSave("DRAFT")}
               isBusy={isPending}
             >
               {isPending ? t("saving") : tCentre("saveAndClose")}
             </GoalActionButton>
-            {!isInPlan && (
+            {mayAddToPlan && (
               <GoalActionButton
                 onClick={() => handleSave("PLAN")}
                 isBusy={isPending}

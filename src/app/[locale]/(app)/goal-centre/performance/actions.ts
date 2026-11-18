@@ -11,6 +11,7 @@ import {
   deletePerformanceGoal,
   PerformanceGoalError,
   updatePerformanceGoal,
+  updatePerformanceGoalAsValidator,
   type PerformanceGoalErrorCode,
 } from "@/server/performance-goals";
 import { isAccessError } from "@/server/permissions";
@@ -72,6 +73,12 @@ export async function createPerformanceGoalAction(input: unknown): Promise<Perfo
 export async function updatePerformanceGoalAction(input: unknown): Promise<PerformanceGoalActionResult> {
   const viewer = await requireEmployee();
   return run("update", () => updatePerformanceGoal(db(), viewer, input));
+}
+
+/** WF-04: the validator saves a changed goal while the document is in validation. */
+export async function updatePerformanceGoalAsValidatorAction(input: unknown): Promise<PerformanceGoalActionResult> {
+  const viewer = await requireEmployee();
+  return run("validator update", () => updatePerformanceGoalAsValidator(db(), viewer, input));
 }
 
 /** Card trash icon - before the document is sent (G2-25). */
