@@ -21,7 +21,7 @@ describe("[WF-08] HR document list - filters", () => {
     });
   });
 
-  it("always scopes to the cycle and requires every search word", () => {
+  it("[HR-07] always scopes to the cycle and requires every search word (name, AMEI or department)", () => {
     expect(documentListWhere(CYCLE_ID, parseDocumentListFilters({}))).toEqual({ cycleId: CYCLE_ID });
     const where = documentListWhere(CYCLE_ID, parseDocumentListFilters({ q: "jan  am12", status: "DO_WALIDACJI" }));
     expect(where).toMatchObject({ cycleId: CYCLE_ID, status: "DO_WALIDACJI" });
@@ -32,6 +32,7 @@ describe("[WF-08] HR document list - filters", () => {
         { firstName: { contains: "am12", mode: "insensitive" } },
         { lastName: { contains: "am12", mode: "insensitive" } },
         { amei: { contains: "am12", mode: "insensitive" } },
+        { department: { contains: "am12", mode: "insensitive" } },
       ],
     });
   });

@@ -4,6 +4,7 @@ import { createContext, use, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { PencilIcon } from "@/components/shell/icons";
 import type { DevelopmentGoalContext } from "@/domain/development-goal";
+import type { GoalEditor } from "@/domain/hr-correction";
 import type { PerformanceGoalContext } from "@/domain/performance-goal";
 import { DevelopmentGoalDialog } from "../../development/development-goal-dialog";
 import type { DevelopmentGoalItem } from "../../development/goal-format";
@@ -13,6 +14,7 @@ import { PerformanceGoalDialog } from "../../performance/performance-goal-dialog
 // WF-04: N+1 changes the employee's goals while the document waits for validation. The review rows
 // stay server-rendered; each gets an edit button that opens the Part 2 / Part 3 goal window in
 // validator mode (content only, no plan or cancel buttons). The server re-checks every rule on save.
+// HR-07 reuses the same editors with editor="hr" (HR panel): the windows then also ask for a reason.
 
 // The windows always open in edit mode. `canChange` is true because the page renders an editor only
 // when the workflow says the validator may edit; `wasSent` only matters for "Anuluj cel", which the
@@ -26,6 +28,8 @@ type EditorProps<Goal, Context> = {
   documentId: number;
   goals: readonly Goal[];
   context: Context;
+  /** "validator" (WF-04, default) or "hr" (HR-07: the windows also ask for the correction reason). */
+  editor?: Exclude<GoalEditor, "owner">;
   children: ReactNode;
 };
 
@@ -33,6 +37,7 @@ export function PerformanceGoalEditor({
   documentId,
   goals,
   context,
+  editor = "validator",
   children,
 }: EditorProps<PerformanceGoalItem, PerformanceGoalContext>) {
   const [goalId, setGoalId] = useState<number | null>(null);
@@ -46,7 +51,7 @@ export function PerformanceGoalEditor({
         documentId={documentId}
         canChange
         wasSent
-        isValidator
+        editor={editor}
         onClosed={() => setGoalId(null)}
       />
     </OpenGoalContext>
@@ -57,6 +62,7 @@ export function DevelopmentGoalEditor({
   documentId,
   goals,
   context,
+  editor = "validator",
   children,
 }: EditorProps<DevelopmentGoalItem, DevelopmentGoalContext>) {
   const [goalId, setGoalId] = useState<number | null>(null);
@@ -70,7 +76,7 @@ export function DevelopmentGoalEditor({
         documentId={documentId}
         canChange
         wasSent
-        isValidator
+        editor={editor}
         onClosed={() => setGoalId(null)}
       />
     </OpenGoalContext>

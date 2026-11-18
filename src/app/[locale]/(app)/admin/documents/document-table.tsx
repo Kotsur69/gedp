@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { InfoIcon } from "@/components/shell/icons";
 import { revertTargets } from "@/domain/document-status";
@@ -9,8 +10,8 @@ import { formatDate } from "@/i18n/format";
 import type { AdminDocumentItem, PersonRef } from "@/server/document-admin";
 import { RevertStatusDialog, StatusBadge, type RevertOutcome } from "./revert-status-dialog";
 
-// Document list of the HR panel (WF-08, WF-09): status and who validates each document, with
-// "Cofnij status" per row. Display only: the page loads the rows (HR checked there) and the Server
+// Document list of the HR panel (WF-08, WF-09, HR-07): status and who validates each document, with
+// "Otwórz" (HR-07 correction view, every cycle) and "Cofnij status" (open cycle only) per row. Display only: the page loads the rows (HR checked there) and the Server
 // Action re-checks everything on save.
 
 const CELL = "border-b border-line px-3 py-3 align-top";
@@ -75,11 +76,9 @@ export function DocumentTable({ items, year, canRevert }: DocumentTableProps) {
               <th scope="col" className={HEAD}>
                 {t("lastChange")}
               </th>
-              {canRevert && (
-                <th scope="col" className={HEAD}>
-                  <span className="sr-only">{t("actions")}</span>
-                </th>
-              )}
+              <th scope="col" className={HEAD}>
+                <span className="sr-only">{t("actions")}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -132,22 +131,30 @@ function DocumentRow({ item, canRevert, onRevert }: DocumentRowProps) {
         <StatusBadge status={item.status} label={tStatus(item.status)} />
       </td>
       <td className={`${CELL} text-ink-soft tabular-nums`}>{formatDate(item.updatedAt, locale)}</td>
-      {canRevert && (
-        <td className={`${CELL} text-right`}>
-          {hasEarlierStatus ? (
-            <button
-              type="button"
-              onClick={onRevert}
-              aria-label={t("revertFor", { name: item.employeeName })}
-              className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-line-strong bg-surface px-4 font-semibold whitespace-nowrap text-ink transition duration-200 hover:border-accent hover:text-accent focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
-            >
-              {t("revert.submit")}
-            </button>
-          ) : (
-            <span className="text-ink-soft">{t("noEarlier")}</span>
-          )}
-        </td>
-      )}
+      <td className={`${CELL} text-right`}>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link
+            href={`/admin/documents/${item.documentId}`}
+            aria-label={t("openFor", { name: item.employeeName })}
+            className="inline-flex min-h-11 items-center rounded-xl bg-(image:--am-gradient) px-4 font-semibold tracking-[0.04em] whitespace-nowrap text-on-brand transition duration-200 hover:opacity-90 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+          >
+            {t("open")}
+          </Link>
+          {canRevert &&
+            (hasEarlierStatus ? (
+              <button
+                type="button"
+                onClick={onRevert}
+                aria-label={t("revertFor", { name: item.employeeName })}
+                className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-line-strong bg-surface px-4 font-semibold whitespace-nowrap text-ink transition duration-200 hover:border-accent hover:text-accent focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
+              >
+                {t("revert.submit")}
+              </button>
+            ) : (
+              <span className="text-ink-soft">{t("noEarlier")}</span>
+            ))}
+        </div>
+      </td>
     </tr>
   );
 }

@@ -27,7 +27,7 @@ export interface State {
   cycle: { id: number; year: number; status: string; minPerformanceGoals: number; requiredWeightSum: number; minDevelopmentGoals: number };
   documents: { id: number; employeeId: number; cycleId: number; status: DocumentStatusValue; validatorId: number | null }[];
   templates: { id: number; cycleId: number; type: string }[];
-  acks: { documentId: number; templateId: number; hsCommitment: string | null }[];
+  acks: { id: number; documentId: number; templateId: number; hsCommitment: string | null; acknowledgedAt: Date }[];
   performanceGoals: {
     id: number;
     documentId: number;
@@ -37,10 +37,21 @@ export interface State {
     title?: string;
     changedByManager?: boolean;
   }[];
-  developmentGoals: { id: number; documentId: number; state: string; progress: number }[];
+  developmentGoals: { id: number; documentId: number; state: string; progress: number; changedByManager?: boolean }[];
+  /** Part 3 catalogue of the cycle (competencies and development areas share the shape). */
+  competencies: CatalogEntry[];
+  developmentAreas: CatalogEntry[];
   history: { id: number; documentId: number; fromStatus: string | null; toStatus: string; authorId: number; comment: string | null; createdAt: Date }[];
   audit: Row[];
 }
+
+export type CatalogEntry = {
+  id: number;
+  cycleId: number;
+  namePl: string;
+  nameEn: string;
+  isActive: boolean;
+};
 
 // M1 manages A and B; N2 manages M1 (so is A's N+2); OV is B's override validator; HR is HR.
 export const M1 = 1;
@@ -87,11 +98,18 @@ export function seed(statusA: DocumentStatusValue = "SZKIC", statusB: DocumentSt
       { id: 101, cycleId: 1, type: "WARTOSCI" },
       { id: 102, cycleId: 1, type: "BHP" },
     ],
-    acks: [DOC_A, DOC_B].flatMap((documentId) => [
-      { documentId, templateId: 100, hsCommitment: null },
-      { documentId, templateId: 101, hsCommitment: null },
-      { documentId, templateId: 102, hsCommitment: "Report every near miss" },
-    ]),
+    acks: [DOC_A, DOC_B].flatMap((documentId) =>
+      [
+        { templateId: 100, hsCommitment: null },
+        { templateId: 101, hsCommitment: null },
+        { templateId: 102, hsCommitment: "Report every near miss" },
+      ].map((ack) => ({
+        ...ack,
+        id: documentId * 100 + ack.templateId,
+        documentId,
+        acknowledgedAt: new Date(Date.UTC(2027, 0, 15)),
+      })),
+    ),
     performanceGoals: [
       { id: 200, documentId: DOC_A, state: "W_PLANIE", weight: 60, progress: 0 },
       { id: 201, documentId: DOC_A, state: "W_PLANIE", weight: 40, progress: 50 },
@@ -102,6 +120,8 @@ export function seed(statusA: DocumentStatusValue = "SZKIC", statusB: DocumentSt
       { id: 300, documentId: DOC_A, state: "W_PLANIE", progress: 0 },
       { id: 310, documentId: DOC_B, state: "W_PLANIE", progress: 0 },
     ],
+    competencies: [{ id: 400, cycleId: 1, namePl: "Samodzielność", nameEn: "Independence", isActive: true }],
+    developmentAreas: [{ id: 410, cycleId: 1, namePl: "Projekty", nameEn: "Projects", isActive: true }],
     history: [],
     audit: [],
   };
@@ -123,6 +143,8 @@ function fieldMatches(actual: unknown, condition: unknown): boolean {
   }
   return actual === condition;
 }
+
+type AckKey = { documentId_templateId: { documentId: number; templateId: number } };
 
 type Relations = Record<string, (row: Row) => Row | undefined>;
 
@@ -155,6 +177,8 @@ export function createFakeDb(initial: State, options: FakeOptions = {}) {
   const personById = (id: unknown) => state.people.find((p) => p.id === id);
   const documentRelations: Relations = { employee: (doc) => personById(doc.employeeId) as unknown as Row | undefined };
   const findDocuments = (where: unknown) => state.documents.filter((doc) => matches(doc, where, documentRelations));
+  const findAck = ({ documentId_templateId: key }: AckKey) =>
+    state.acks.find((a) => a.documentId === key.documentId && a.templateId === key.templateId);
   const goalTable = <G extends Row>(rows: () => G[]) => ({
     findMany: async ({ where }: { where: unknown }) => rows().filter((g) => matches(g, where)),
     findFirst: async ({ where }: { where: unknown }) => rows().find((g) => matches(g, where)) ?? null,
@@ -215,6 +239,21 @@ export function createFakeDb(initial: State, options: FakeOptions = {}) {
     },
     groupGoalAck: {
       findMany: async ({ where }: { where: unknown }) => state.acks.filter((a) => matches(a, where)),
+      // A copy, like a real query result: a later update must not change what was read.
+      findUnique: async ({ where }: { where: AckKey }) => {
+        const ack = findAck(where);
+        return ack ? { ...ack } : null;
+      },
+      update: async ({ where, data }: { where: AckKey; data: Row }) => {
+        const ack = findAck(where);
+        if (!ack) throw new Error(`fake db: no ack ${JSON.stringify(where)}`);
+        Object.assign(ack, data);
+        return ack;
+      },
+    },
+    competency: { findMany: async ({ where }: { where: unknown }) => state.competencies.filter((c) => matches(c, where)) },
+    developmentArea: {
+      findMany: async ({ where }: { where: unknown }) => state.developmentAreas.filter((a) => matches(a, where)),
     },
     performanceGoal: goalTable(() => state.performanceGoals),
     // Only the default "Tekst" type: enough for a draft goal's full-replace edit.

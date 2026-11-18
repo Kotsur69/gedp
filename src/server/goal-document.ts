@@ -1,7 +1,13 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { canValidatorEditGoals, goalEditScope, isDocumentStatus, type GoalEditScope } from "@/domain/document-status";
-import { ForbiddenError, requireDocumentPermission, type Viewer } from "@/server/permissions";
+import {
+  ForbiddenError,
+  NotFoundError,
+  requireActiveHrAdmin,
+  requireDocumentPermission,
+  type Viewer,
+} from "@/server/permissions";
 
 // Shared by the goal writers of Parts 2 and 3 (performance-goals.ts, development-goals.ts): the
 // document lock and permission check every goal write starts with (owner, or the validator for
@@ -104,6 +110,23 @@ export async function lockValidatorGoalDocument(
       isDocumentStatus(locked.documentStatus) &&
       canValidatorEditGoals(locked.documentStatus, locked.cycleStatus === "OTWARTY"),
   };
+}
+
+export interface HrLockedGoalDocument {
+  cycleId: number;
+  cycleYear: number;
+}
+
+/**
+ * HR-07, inside a write transaction: checks that the viewer is still an active HR admin (live row,
+ * not the session flag), then locks the document (lockDocumentRow). No status or cycle rule: HR
+ * corrects any document, which is why every caller requires a reason and audits it.
+ */
+export async function lockHrGoalDocument(tx: Tx, viewer: Viewer, documentId: number): Promise<HrLockedGoalDocument> {
+  await requireActiveHrAdmin(tx, viewer);
+  const locked = await lockDocumentRow(tx, documentId);
+  if (!locked) throw new NotFoundError(`document ${documentId}`);
+  return { cycleId: locked.cycleId, cycleYear: locked.cycleYear };
 }
 
 // @db.Date values travel as UTC midnight.

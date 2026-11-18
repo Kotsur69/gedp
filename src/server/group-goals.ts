@@ -3,7 +3,13 @@ import { z } from "zod";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { CycleStatus, DocumentStatus, GroupGoalType } from "@/generated/prisma/enums";
 import { EDITABLE_DOCUMENT_STATUSES } from "@/domain/document-status";
+import {
+  HR_CORRECTION_AUDIT_ACTION,
+  parseHrCorrectionReason,
+  type HrCorrectionReasonErrorCode,
+} from "@/domain/hr-correction";
 import { writeAudit } from "@/server/audit";
+import { lockHrGoalDocument } from "@/server/goal-document";
 import { ForbiddenError, requireDocumentPermission, type Viewer } from "@/server/permissions";
 
 // Goal Centre, Part 1: the three Group goals (G1-01..12, WF-23).
@@ -19,6 +25,10 @@ import { ForbiddenError, requireDocumentPermission, type Viewer } from "@/server
 // but an acknowledgement or a personal commitment made by someone else would be a false statement.
 // When: only in an OPEN cycle and while the document is SZKIC or ZWROCONY (not sent / returned).
 // Both rules are re-asserted inside the write transaction, which also locks the document row.
+//
+// HR-07 (correctBhpCommitmentAsHr): an active HR admin corrects the text of a BHP commitment the
+// employee has already saved, in any status and cycle, with a required reason kept in the audit
+// row. HR never creates a commitment or an acknowledgement on someone's behalf.
 
 export const BHP_COMMITMENT_MAX_LENGTH = 1000;
 
@@ -45,6 +55,11 @@ export const bhpCommitmentInputSchema = z
   .object({ documentId: dbIdSchema, templateId: dbIdSchema, commitment: bhpCommitmentSchema })
   .strict();
 
+/** HR-07: the reason is checked separately (parseHrCorrectionReason) so its own codes reach the form. */
+export const hrBhpCorrectionInputSchema = z
+  .object({ documentId: dbIdSchema, templateId: dbIdSchema, commitment: bhpCommitmentSchema, reason: z.unknown() })
+  .strict();
+
 export type GroupGoalErrorCode =
   | "INVALID_INPUT"
   | "COMMITMENT_REQUIRED"
@@ -52,7 +67,10 @@ export type GroupGoalErrorCode =
   | "NOT_EDITABLE"
   | "ALREADY_ACKNOWLEDGED"
   | "WRONG_GOAL_TYPE"
-  | "TEMPLATE_NOT_FOUND";
+  | "TEMPLATE_NOT_FOUND"
+  /** HR-07: there is no saved commitment to correct. */
+  | "NOT_ACKNOWLEDGED"
+  | HrCorrectionReasonErrorCode;
 
 export class GroupGoalError extends Error {
   constructor(readonly code: GroupGoalErrorCode) {
@@ -355,6 +373,55 @@ export async function saveBhpCommitment(
         hsCommitment: ack.hsCommitment,
         acknowledgedAt: ack.acknowledgedAt,
       },
+    });
+    return { templateId, acknowledgedAt: ack.acknowledgedAt, commitment: ack.hsCommitment };
+  });
+}
+
+/**
+ * HR-07: HR corrects the text of a saved BHP commitment, in any document status and cycle. The
+ * acknowledgement date stays (it records when the employee committed); the audit row keeps the
+ * previous and the new text and the reason.
+ */
+export async function correctBhpCommitmentAsHr(
+  db: GroupGoalWriter,
+  viewer: Viewer,
+  input: unknown,
+): Promise<AcknowledgedGoal> {
+  const { documentId, templateId, commitment, reason } = parseInput(hrBhpCorrectionInputSchema, input);
+  const parsedReason = parseHrCorrectionReason(reason);
+  if (!parsedReason.ok) throw new GroupGoalError(parsedReason.code);
+
+  return db.$transaction(async (tx) => {
+    const document = await lockHrGoalDocument(tx, viewer, documentId);
+    const template = await tx.groupGoalTemplate.findUnique({
+      where: { id: templateId },
+      select: { id: true, type: true, cycleId: true },
+    });
+    if (!template || template.cycleId !== document.cycleId) throw new GroupGoalError("TEMPLATE_NOT_FOUND");
+    if (template.type !== "BHP") throw new GroupGoalError("WRONG_GOAL_TYPE");
+
+    const key = { documentId_templateId: { documentId, templateId } };
+    const before = await tx.groupGoalAck.findUnique({
+      where: key,
+      select: { id: true, hsCommitment: true, acknowledgedAt: true },
+    });
+    if (!before || before.hsCommitment === null) throw new GroupGoalError("NOT_ACKNOWLEDGED");
+    // Unchanged text: no write and no audit row.
+    if (before.hsCommitment === commitment) return { templateId, acknowledgedAt: before.acknowledgedAt, commitment };
+
+    const ack = await tx.groupGoalAck.update({
+      where: key,
+      data: { hsCommitment: commitment },
+      select: { id: true, acknowledgedAt: true, hsCommitment: true },
+    });
+    await writeAudit(tx, {
+      actorId: viewer.id,
+      entity: "group_goal_ack",
+      entityId: ack.id,
+      action: HR_CORRECTION_AUDIT_ACTION,
+      before: { documentId, templateId, type: template.type, hsCommitment: before.hsCommitment },
+      after: { documentId, templateId, type: template.type, hsCommitment: ack.hsCommitment, reason: parsedReason.reason },
     });
     return { templateId, acknowledgedAt: ack.acknowledgedAt, commitment: ack.hsCommitment };
   });

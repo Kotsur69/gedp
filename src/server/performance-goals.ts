@@ -20,9 +20,15 @@ import {
   type PerformanceGoalState,
   type TargetTypeOption,
 } from "@/domain/performance-goal";
+import {
+  HR_CORRECTION_AUDIT_ACTION,
+  parseHrCorrectionReason,
+  type HrCorrectionReasonErrorCode,
+} from "@/domain/hr-correction";
 import { writeAudit } from "@/server/audit";
 import {
   fromIsoDate,
+  lockHrGoalDocument,
   lockOwnGoalDocument,
   lockValidatorGoalDocument,
   MANAGER_UPDATE_AUDIT_ACTION,
@@ -54,6 +60,10 @@ import { ForbiddenError, NotFoundError, requireDocumentPermission, type Viewer }
 // changedByManager = true ("Zmieniony przez N+1", counted in the section and top-bar counters) and
 // the audit row keeps the previous and the new values. The flag stays after approve / return, so
 // the employee sees which goals N+1 changed.
+//
+// HR-07 (correctPerformanceGoalAsHr): an active HR admin corrects the content of any goal of any
+// document (any status, any cycle) with a required reason, kept in the audit row. Same content-only
+// path as WF-04, without the "Zmieniony przez N+1" flag.
 
 const MAX_INT4 = 2_147_483_647;
 /** [ZAŁ] Upper bound per document (Q-03 asks HR for the real maximum); counts cancelled goals too. */
@@ -68,6 +78,10 @@ export const updateGoalInputSchema = z.object({ goalId: dbIdSchema, mode: saveMo
 export const goalIdInputSchema = z.object({ goalId: dbIdSchema }).strict();
 /** WF-04: no save mode - the validator changes a goal's content, never its state. */
 export const validatorUpdateGoalInputSchema = z.object({ goalId: dbIdSchema, goal: z.unknown() }).strict();
+/** HR-07: content only, like WF-04, plus the required reason (checked by parseHrCorrectionReason). */
+export const hrCorrectGoalInputSchema = z
+  .object({ goalId: dbIdSchema, goal: z.unknown(), reason: z.unknown() })
+  .strict();
 
 /** Rule violations that are not about the payload. */
 export type GoalStateErrorCode =
@@ -79,7 +93,7 @@ export type GoalStateErrorCode =
   | "DEFAULT_TARGET_TYPE_MISSING"
   | "NOTHING_TO_COPY";
 
-export type PerformanceGoalErrorCode = GoalInputErrorCode | GoalStateErrorCode;
+export type PerformanceGoalErrorCode = GoalInputErrorCode | GoalStateErrorCode | HrCorrectionReasonErrorCode;
 
 export const HTTP_BAD_REQUEST = 400;
 export const HTTP_CONFLICT = 409;
@@ -444,11 +458,57 @@ export async function updatePerformanceGoalAsValidator(
   input: unknown,
 ): Promise<PerformanceGoalView> {
   const { goalId, goal } = parseEnvelope(validatorUpdateGoalInputSchema, input);
+  return updateGoalContent(db, viewer, goalId, goal, {
+    lockDocument: lockValidatedDocument,
+    auditAction: MANAGER_UPDATE_AUDIT_ACTION,
+    marksChangedByManager: true,
+  });
+}
+
+/**
+ * HR-07: HR corrects a goal of any document, whatever its status or cycle, with a required reason.
+ * Content only, like WF-04: the state stays, a goal in the plan is validated like "Dodaj do planu".
+ * "Zmieniony przez N+1" is left as it is (HR is not N+1); the audit row keeps before / after and
+ * the reason.
+ */
+export async function correctPerformanceGoalAsHr(
+  db: PerformanceGoalWriter,
+  viewer: Viewer,
+  input: unknown,
+): Promise<PerformanceGoalView> {
+  const { goalId, goal, reason } = parseEnvelope(hrCorrectGoalInputSchema, input);
+  const parsedReason = parseHrCorrectionReason(reason);
+  if (!parsedReason.ok) throw new PerformanceGoalError(parsedReason.code);
+  return updateGoalContent(db, viewer, goalId, goal, {
+    lockDocument: lockHrGoalDocument,
+    auditAction: HR_CORRECTION_AUDIT_ACTION,
+    marksChangedByManager: false,
+    reason: parsedReason.reason,
+  });
+}
+
+interface ContentEditor {
+  lockDocument: DocumentLocker<{ cycleYear: number }>;
+  auditAction: string;
+  /** WF-04 sets "Zmieniony przez N+1"; HR-07 leaves the flag as it is. */
+  marksChangedByManager: boolean;
+  /** HR-07: stored in the audit row's `after`. */
+  reason?: string;
+}
+
+/** Content-only full replace shared by WF-04 and HR-07: the goal's state never changes. */
+async function updateGoalContent(
+  db: PerformanceGoalWriter,
+  viewer: Viewer,
+  goalId: number,
+  goal: unknown,
+  editor: ContentEditor,
+): Promise<PerformanceGoalView> {
   // The lenient mode refuses malformed payloads before any database call; PLAN rules follow below.
   parseGoal("DRAFT", goal);
 
   return db.$transaction(async (tx) => {
-    const { document, row } = await lockGoal(tx, viewer, goalId, lockValidatedDocument);
+    const { document, row } = await lockGoal(tx, viewer, goalId, editor.lockDocument);
     const before = toView(row);
     if (before.state === "ANULOWANY") throw new PerformanceGoalError("GOAL_CANCELLED");
 
@@ -461,7 +521,10 @@ export async function updatePerformanceGoalAsValidator(
     const updated = toView(
       await tx.performanceGoal.update({
         where: { id: goalId },
-        data: { ...goalColumns(data, saveMode, row.progress), changedByManager: true },
+        data: {
+          ...goalColumns(data, saveMode, row.progress),
+          ...(editor.marksChangedByManager ? { changedByManager: true } : {}),
+        },
         select: goalSelect,
       }),
     );
@@ -469,9 +532,13 @@ export async function updatePerformanceGoalAsValidator(
       actorId: viewer.id,
       entity: "performance_goal",
       entityId: goalId,
-      action: MANAGER_UPDATE_AUDIT_ACTION,
+      action: editor.auditAction,
       before: { ...auditRecord(before), changedByManager: before.changedByManager },
-      after: { ...auditRecord(updated), changedByManager: updated.changedByManager },
+      after: {
+        ...auditRecord(updated),
+        changedByManager: updated.changedByManager,
+        ...(editor.reason === undefined ? {} : { reason: editor.reason }),
+      },
     });
     return updated;
   });

@@ -14,7 +14,8 @@ import { EditGoalButton } from "./validator-goal-editor";
 // Summary of the three parts for the validator (WF-03, WF-22). Server-rendered: the validator
 // decides in the status panel. WF-04: while the document is in validation, `canEdit` adds a pencil
 // to each performance and development goal (validator-goal-editor.tsx); changed goals carry the
-// "Zmieniony przez N+1" marker and each part shows how many N+1 has changed.
+// "Zmieniony przez N+1" marker and each part shows how many N+1 has changed. HR-07: the HR panel
+// renders the same summary with every goal editable and a correction button on the BHP commitment.
 
 const ROW = "rounded-2xl border border-line bg-surface p-4 sm:p-5";
 
@@ -54,7 +55,14 @@ function ChangedCounter({ text, count }: { text: string; count: number }) {
   return <p className={`rounded-full border px-3 py-1 text-sm font-semibold tabular-nums ${tone}`}>{text}</p>;
 }
 
-export async function GroupGoalsReview({ goals, locale }: { goals: readonly GroupGoalView[]; locale: Locale }) {
+type GroupProps = {
+  goals: readonly GroupGoalView[];
+  locale: Locale;
+  /** HR-07: the correction button of a saved BHP commitment (HR panel only). */
+  commitmentAction?: (goal: GroupGoalView & { commitment: string }) => ReactNode;
+};
+
+export async function GroupGoalsReview({ goals, locale, commitmentAction }: GroupProps) {
   const t = await getTranslations();
   return (
     <Panel labelledBy="review-part1">
@@ -69,14 +77,18 @@ export async function GroupGoalsReview({ goals, locale }: { goals: readonly Grou
             <li key={goal.templateId} className={ROW}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-semibold text-ink">{t(`glossary.groupGoalTypes.${goal.type}`)}</h3>
-                <StateChip
-                  isMuted={goal.acknowledgedAt === null}
-                  text={
-                    goal.acknowledgedAt
-                      ? t("team.acknowledgedOn", { date: formatDate(goal.acknowledgedAt, locale) })
-                      : t("team.notAcknowledged")
-                  }
-                />
+                <RowBadges>
+                  <StateChip
+                    isMuted={goal.acknowledgedAt === null}
+                    text={
+                      goal.acknowledgedAt
+                        ? t("team.acknowledgedOn", { date: formatDate(goal.acknowledgedAt, locale) })
+                        : t("team.notAcknowledged")
+                    }
+                  />
+                  {commitmentAction && goal.type === "BHP" && goal.commitment !== null &&
+                    commitmentAction({ ...goal, commitment: goal.commitment })}
+                </RowBadges>
               </div>
               {goal.commitment && (
                 <p className="mt-2 text-sm leading-relaxed whitespace-pre-line text-ink">

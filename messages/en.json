@@ -752,14 +752,14 @@
       "exportEmployeeData": "Export all data of this employee"
     },
     "documents": {
-      "cardHint": "Document statuses, validators and status revert",
+      "cardHint": "Employees' documents: goal corrections with a reason, statuses, validators and status revert",
       "title": "Documents",
-      "intro": "GEDP document statuses in the selected cycle. You can move a document back to an earlier status - the reason goes to the document history, which the employee and the manager see, and to the audit log.",
+      "intro": "GEDP documents in the selected cycle. Open a document to correct its goals (every correction needs a reason), or move it back to an earlier status - the reason goes to the document history, which the employee and the manager see, and to the audit log.",
       "readOnly": "This cycle is not open: statuses are view only.",
       "noCycle": "There is no cycle yet.",
       "filtersTitle": "Search and filters",
       "search": "Search",
-      "searchHint": "Employee's first name, last name or AMEI",
+      "searchHint": "Employee's first name, last name, AMEI or department",
       "status": "Status",
       "anyStatus": "All statuses",
       "apply": "Show results",
@@ -784,7 +784,11 @@
         "saving": "Saving…",
         "done": "Status reverted: {name} ({from} → {to}).",
         "count": "{count} / {max}"
-      }
+      },
+      "open": "Open",
+      "openFor": "Open document: {name}",
+      "backToList": "Back to the document list",
+      "documentOf": "Document: {name}"
     }
   },
   "reports": {
@@ -841,5 +845,30 @@
     "notFoundDescription": "The page does not exist or you do not have access to it.",
     "forbidden": "You are not allowed to do this.",
     "backHome": "Back to home"
+  },
+  "hrCorrection": {
+    "modeBadge": "HR correction mode",
+    "notice": "As HR you can correct goals in every part of the document, whatever its status and cycle. Every correction needs a reason - the reason and the previous and new values go to the audit log. The document status does not change.",
+    "reasonLabel": "Reason for the correction",
+    "reasonHint": "Goes to the audit log together with the previous and the new value. {count} / {max} characters",
+    "required": "(required)",
+    "errors": {
+      "REASON_REQUIRED": "Please give a reason for the correction",
+      "REASON_TOO_LONG": "The reason can have at most {max} characters"
+    },
+    "editCommitment": "Correct the health and safety commitment",
+    "bhpTitle": "Health and safety commitment correction",
+    "bhpLabel": "Employee's health and safety commitment",
+    "bhpHint": "{count} / {max} characters",
+    "save": "Save correction",
+    "saving": "Saving…",
+    "bhpErrors": {
+      "COMMITMENT_REQUIRED": "The commitment cannot be empty",
+      "COMMITMENT_TOO_LONG": "The commitment can have at most {max} characters",
+      "NOT_ACKNOWLEDGED": "The employee has not saved a health and safety commitment yet - there is nothing to correct.",
+      "FORBIDDEN": "You are not allowed to do this.",
+      "FAILED": "Saving failed. Please try again.",
+      "INVALID_INPUT": "The correction could not be saved. Refresh the page and try again."
+    }
   }
 }

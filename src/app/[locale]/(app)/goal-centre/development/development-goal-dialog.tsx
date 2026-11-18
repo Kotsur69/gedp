@@ -2,15 +2,23 @@
 
 import { useEffect, useRef, useState, useTransition, type ReactNode, type RefObject, type SyntheticEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { CorrectionReasonField } from "@/components/goals/correction-reason-field";
 import {
   developmentGoalFieldErrors,
   developmentGoalSchema,
   type DevelopmentGoalContext,
   type GoalSaveMode,
 } from "@/domain/development-goal";
+import {
+  isHrCorrectionReasonErrorCode,
+  parseHrCorrectionReason,
+  type GoalEditor,
+  type HrCorrectionReasonErrorCode,
+} from "@/domain/hr-correction";
 import type { Locale } from "@/i18n/config";
 import {
   cancelDevelopmentGoalAction,
+  correctDevelopmentGoalAsHrAction,
   createDevelopmentGoalAction,
   deleteDevelopmentGoalAction,
   updateDevelopmentGoalAction,
@@ -41,6 +49,7 @@ type Mode = "view" | "edit" | "confirmDelete" | "confirmCancel" | "confirmDiscar
 const TITLE_ID = "development-goal-dialog-title";
 const ERROR_ID = "development-goal-dialog-error";
 const CONFIRM_NO_ID = "development-goal-dialog-no";
+const REASON_ID = "development-goal-dialog-reason";
 
 /** Asked on Escape; returns true when the body handled it (unsaved edits -> discard question). */
 type CancelRequest = () => boolean;
@@ -52,8 +61,11 @@ type DialogProps = {
   documentId: number | null;
   canChange: boolean;
   wasSent: boolean;
-  /** WF-04: the validator edits during validation - content only, no plan or cancel buttons. */
-  isValidator?: boolean;
+  /**
+   * WF-04 "validator" and HR-07 "hr" edit content only (no plan or cancel buttons); "hr" also asks
+   * for the required correction reason.
+   */
+  editor?: GoalEditor;
   onClosed: () => void;
 };
 
@@ -110,7 +122,9 @@ type BodyProps = Omit<DialogProps, "target" | "onClosed"> & {
 };
 
 function DialogBody(props: BodyProps) {
-  const { target, goals, context, documentId, canChange, wasSent, isValidator = false, cancelRequestRef, requestClose } = props;
+  const { target, goals, context, documentId, canChange, wasSent, editor = "owner", cancelRequestRef, requestClose } = props;
+  const isValidator = editor === "validator";
+  const isHr = editor === "hr";
   const t = useTranslations("developmentGoals");
   const tCentre = useTranslations("goalCentre");
   const tCommon = useTranslations("common");
@@ -121,12 +135,15 @@ function DialogBody(props: BodyProps) {
   const [values, setValues] = useState<GoalFormValues>(initialValues);
   const [fieldErrors, setFieldErrors] = useState<GoalFieldErrors>({});
   const [actionError, setActionError] = useState<DevelopmentGoalActionErrorCode | null>(null);
+  const [reason, setReason] = useState("");
+  const [reasonError, setReasonError] = useState<HrCorrectionReasonErrorCode | null>(null);
   const [isPending, startTransition] = useTransition();
   // Element to focus after the next commit in which nothing is pending (fields are disabled while a
   // save runs, and focusing a disabled control does nothing).
   const focusRequestRef = useRef<string | null>(null);
 
-  const isDirty = mode === "edit" && JSON.stringify(values) !== JSON.stringify(initialValues);
+  const isDirty =
+    mode === "edit" && (JSON.stringify(values) !== JSON.stringify(initialValues) || reason.trim() !== "");
 
   useEffect(() => {
     if (isPending || !focusRequestRef.current) return;
@@ -171,6 +188,11 @@ function DialogBody(props: BodyProps) {
         return;
       }
       if (result.ok) return requestClose();
+      if (isHrCorrectionReasonErrorCode(result.code)) {
+        setReasonError(result.code);
+        focusRequestRef.current = REASON_ID;
+        return;
+      }
       setActionError(result.code);
       showErrors(result.fieldErrors, true);
     });
@@ -183,9 +205,20 @@ function DialogBody(props: BodyProps) {
     const payload = toPayload(values);
     // Quick feedback with the same schema the server runs again.
     const parsed = developmentGoalSchema(saveMode, context).safeParse(payload);
+    // HR-07: the reason is checked in the same pass, so both kinds of errors show at once.
+    const parsedReason = isHr ? parseHrCorrectionReason(reason) : null;
+    setReasonError(parsedReason && !parsedReason.ok ? parsedReason.code : null);
     if (!parsed.success) return showErrors(developmentGoalFieldErrors(parsed.error), false);
     setFieldErrors({});
+    if (parsedReason && !parsedReason.ok) {
+      focusRequestRef.current = REASON_ID;
+      return;
+    }
     run(() => {
+      // HR-07: content only, like WF-04, with the required reason.
+      if (goal && parsedReason?.ok) {
+        return correctDevelopmentGoalAsHrAction({ goalId: goal.id, goal: payload, reason: parsedReason.reason });
+      }
       // WF-04: the validator's save never changes the goal's state, so it sends no mode.
       if (goal && isValidator) return updateDevelopmentGoalAsValidatorAction({ goalId: goal.id, goal: payload });
       return goal
@@ -232,8 +265,9 @@ function DialogBody(props: BodyProps) {
   const heading = goal ? (competency ?? t("noCompetency")) : t("newGoal");
   const errorKey: ActionErrorKey = actionError && isActionErrorKey(actionError) ? actionError : "INVALID_INPUT";
   const mayChange = canChange && documentId !== null && goal?.state !== "ANULOWANY";
-  // The validator only changes content: no "Dodaj do planu", no "Anuluj cel".
-  const mayAddToPlan = goal?.state !== "W_PLANIE" && !isValidator;
+  // The validator and HR only change content: no "Dodaj do planu", no "Anuluj cel".
+  const isContentOnly = editor !== "owner";
+  const mayAddToPlan = goal?.state !== "W_PLANIE" && !isContentOnly;
   const confirmText = {
     confirmDelete: tCentre("deleteConfirm"),
     confirmCancel: tCentre("cancelConfirm"),
@@ -264,6 +298,15 @@ function DialogBody(props: BodyProps) {
             isPending={isPending}
           />
         )}
+        {mode === "edit" && isHr && (
+          <CorrectionReasonField
+            id={REASON_ID}
+            value={reason}
+            onChange={setReason}
+            error={reasonError}
+            isPending={isPending}
+          />
+        )}
         {mode !== "edit" && goal && <GoalSummary goal={goal} competency={competency} area={area} locale={locale} />}
         {mode !== "view" && mode !== "edit" && <Confirmation>{confirmText[mode]}</Confirmation>}
         {actionError && (
@@ -278,7 +321,7 @@ function DialogBody(props: BodyProps) {
       <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-line px-6 py-4 sm:px-8">
         {mode === "view" && (
           <>
-            {mayChange && wasSent && !isValidator && (
+            {mayChange && wasSent && !isContentOnly && (
               <ActionButton variant="danger" onClick={() => switchMode("confirmCancel", CONFIRM_NO_ID)}>
                 {tCentre("cancelGoal")}
               </ActionButton>

@@ -752,14 +752,14 @@
       "exportEmployeeData": "Eksportuj wszystkie dane pracownika"
     },
     "documents": {
-      "cardHint": "Statusy dokumentów, walidatorzy i cofanie statusu",
+      "cardHint": "Dokumenty pracowników: korekta celów z powodem, statusy, walidatorzy i cofanie statusu",
       "title": "Dokumenty",
-      "intro": "Statusy dokumentów GEDP w wybranym cyklu. Możesz cofnąć dokument do wcześniejszego statusu - powód trafi do historii dokumentu, którą widzą pracownik i przełożony, oraz do dziennika audytu.",
+      "intro": "Dokumenty GEDP w wybranym cyklu. Otwórz dokument, aby poprawić cele (każda korekta wymaga powodu), albo cofnij go do wcześniejszego statusu - powód trafi do historii dokumentu, którą widzą pracownik i przełożony, oraz do dziennika audytu.",
       "readOnly": "Ten cykl nie jest otwarty: statusy są tylko do podglądu.",
       "noCycle": "Nie ma jeszcze żadnego cyklu.",
       "filtersTitle": "Wyszukiwanie i filtry",
       "search": "Szukaj",
-      "searchHint": "Imię, nazwisko lub AMEI pracownika",
+      "searchHint": "Imię, nazwisko, AMEI lub dział pracownika",
       "status": "Status",
       "anyStatus": "Wszystkie statusy",
       "apply": "Pokaż wyniki",
@@ -784,7 +784,11 @@
         "saving": "Zapisywanie…",
         "done": "Cofnięto status: {name} ({from} → {to}).",
         "count": "{count} / {max}"
-      }
+      },
+      "open": "Otwórz",
+      "openFor": "Otwórz dokument: {name}",
+      "backToList": "Wróć do listy dokumentów",
+      "documentOf": "Dokument: {name}"
     }
   },
   "reports": {
@@ -841,5 +845,30 @@
     "notFoundDescription": "Strona nie istnieje albo nie masz do niej dostępu.",
     "forbidden": "Nie masz uprawnień do tej operacji.",
     "backHome": "Wróć na stronę główną"
+  },
+  "hrCorrection": {
+    "modeBadge": "Tryb korekty HR",
+    "notice": "Jako HR możesz poprawić cele w każdej części dokumentu, bez względu na jego status i cykl. Każda korekta wymaga powodu - powód oraz poprzednia i nowa wartość trafiają do dziennika audytu. Status dokumentu się nie zmienia.",
+    "reasonLabel": "Powód korekty",
+    "reasonHint": "Trafi do dziennika audytu razem z poprzednią i nową wartością. {count} / {max} znaków",
+    "required": "(pole obowiązkowe)",
+    "errors": {
+      "REASON_REQUIRED": "Podaj powód korekty",
+      "REASON_TOO_LONG": "Powód może mieć najwyżej {max} znaków"
+    },
+    "editCommitment": "Popraw zobowiązanie BHP",
+    "bhpTitle": "Korekta zobowiązania BHP",
+    "bhpLabel": "Zobowiązanie BHP pracownika",
+    "bhpHint": "{count} / {max} znaków",
+    "save": "Zapisz korektę",
+    "saving": "Zapisywanie…",
+    "bhpErrors": {
+      "COMMITMENT_REQUIRED": "Zobowiązanie nie może być puste",
+      "COMMITMENT_TOO_LONG": "Zobowiązanie może mieć najwyżej {max} znaków",
+      "NOT_ACKNOWLEDGED": "Pracownik nie zapisał jeszcze zobowiązania BHP - nie ma czego poprawić.",
+      "FORBIDDEN": "Nie masz uprawnień do tej operacji.",
+      "FAILED": "Nie udało się zapisać. Spróbuj ponownie.",
+      "INVALID_INPUT": "Nie udało się zapisać korekty. Odśwież stronę i spróbuj ponownie."
+    }
   }
 }

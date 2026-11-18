@@ -12,6 +12,7 @@ import {
   PerformanceGoalError,
   updatePerformanceGoal,
   updatePerformanceGoalAsValidator,
+  correctPerformanceGoalAsHr,
   type PerformanceGoalErrorCode,
 } from "@/server/performance-goals";
 import { isAccessError } from "@/server/permissions";
@@ -79,6 +80,12 @@ export async function updatePerformanceGoalAction(input: unknown): Promise<Perfo
 export async function updatePerformanceGoalAsValidatorAction(input: unknown): Promise<PerformanceGoalActionResult> {
   const viewer = await requireEmployee();
   return run("validator update", () => updatePerformanceGoalAsValidator(db(), viewer, input));
+}
+
+/** HR-07: HR corrects a goal of any document, with a required reason (HR panel). */
+export async function correctPerformanceGoalAsHrAction(input: unknown): Promise<PerformanceGoalActionResult> {
+  const viewer = await requireEmployee();
+  return run("hr correction", () => correctPerformanceGoalAsHr(db(), viewer, input));
 }
 
 /** Card trash icon - before the document is sent (G2-25). */

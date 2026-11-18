@@ -11,6 +11,7 @@ import {
   DevelopmentGoalError,
   updateDevelopmentGoal,
   updateDevelopmentGoalAsValidator,
+  correctDevelopmentGoalAsHr,
   type DevelopmentGoalErrorCode,
 } from "@/server/development-goals";
 import { isAccessError } from "@/server/permissions";
@@ -77,6 +78,12 @@ export async function updateDevelopmentGoalAction(input: unknown): Promise<Devel
 export async function updateDevelopmentGoalAsValidatorAction(input: unknown): Promise<DevelopmentGoalActionResult> {
   const viewer = await requireEmployee();
   return run("validator update", () => updateDevelopmentGoalAsValidator(db(), viewer, input));
+}
+
+/** HR-07: HR corrects a goal of any document, with a required reason (HR panel). */
+export async function correctDevelopmentGoalAsHrAction(input: unknown): Promise<DevelopmentGoalActionResult> {
+  const viewer = await requireEmployee();
+  return run("hr correction", () => correctDevelopmentGoalAsHr(db(), viewer, input));
 }
 
 /** Card trash icon - before the document is sent. */

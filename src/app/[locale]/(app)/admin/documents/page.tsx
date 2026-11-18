@@ -12,8 +12,9 @@ import { listDocumentsForHr, parseDocumentListFilters } from "@/server/document-
 import { DocumentFilters } from "./document-filters";
 import { DocumentTable } from "./document-table";
 
-// HR panel, documents (WF-08, WF-09): every document of the cycle picked in the header, with its
-// status and who validates it, and "Cofnij status" per row. HR only: anyone else gets the 403
+// HR panel, documents (WF-08, WF-09, HR-07): every document of the cycle picked in the header (any
+// cycle, searchable by name, AMEI, department and status), with its status and who validates it,
+// "Otwórz" to correct it ([documentId]/page.tsx) and "Cofnij status" per row. HR only: anyone else gets the 403
 // boundary (forbidden.tsx). The Server Action checks HR again on every revert.
 
 type SearchParams = Record<string, string | string[] | undefined>;

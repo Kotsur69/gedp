@@ -5,7 +5,8 @@ import { DOCUMENT_STATUSES, type DocumentStatusValue } from "@/domain/document-s
 import { requireActiveHrAdmin, type Viewer } from "@/server/permissions";
 
 // HR panel, documents (WF-08, WF-09): every GEDP document of a cycle with its status and who
-// validates it, as the starting point of "Cofnij status". HR only, re-checked against the live row.
+// validates it, as the starting point of "Cofnij status" and of HR-07 corrections. HR only, re-checked
+// against the live row.
 // The revert itself is revertDocumentStatus in workflow.ts; this module only reads.
 
 /** Upper bound for one list; the page says when it is cut and asks for a narrower search. */
@@ -28,7 +29,7 @@ export function parseDocumentListFilters(raw: Record<string, unknown>): Document
   return listFiltersSchema.parse(raw);
 }
 
-/** Documents of the cycle; every search word must match the employee's first name, last name or AMEI. */
+/** Documents of the cycle; every search word must match the employee's first name, last name, AMEI or department (HR-07). */
 export function documentListWhere(cycleId: number, filters: DocumentListFilters): Prisma.GedpDocumentWhereInput {
   const terms = filters.q.split(/\s+/).filter(Boolean).slice(0, MAX_QUERY_TERMS);
   const employee: Prisma.EmployeeWhereInput[] = terms.map((term) => ({
@@ -36,6 +37,7 @@ export function documentListWhere(cycleId: number, filters: DocumentListFilters)
       { firstName: { contains: term, mode: "insensitive" } },
       { lastName: { contains: term, mode: "insensitive" } },
       { amei: { contains: term, mode: "insensitive" } },
+      { department: { contains: term, mode: "insensitive" } },
     ],
   }));
   return {
