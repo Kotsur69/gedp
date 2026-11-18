@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { CLOSING_CONDITION_COUNT } from "@/domain/document-status";
+import { CLOSING_CONDITION_COUNT } from "@/domain/closing-conditions";
 import { createTestDb, hasTestDb, insertPeople, resetTestDb } from "../../tests/setup/db-client";
 import { HIERARCHY_TX_OPTIONS, rebuildHierarchy } from "./hierarchy";
 import { scopedEmployeesWhere, type Viewer } from "./permissions";

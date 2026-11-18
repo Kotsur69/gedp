@@ -3,11 +3,12 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { DocumentStatus } from "@/generated/prisma/enums";
 import {
   closingProgress,
+  type ClosingCycleConfig,
+  type ClosingDocument,
   type ClosingGoalState,
   type ClosingGroupGoalType,
-  type ClosingInput,
   type ClosingProgress,
-} from "@/domain/document-status";
+} from "@/domain/closing-conditions";
 import { accessSubjectSelect, permissionsFromRow, scopedEmployeesWhere, type Viewer } from "@/server/permissions";
 
 // "Mój zespół" list (WF-20..22, plan section 6). Who appears is decided by the permission module:
@@ -63,11 +64,7 @@ export function teamMembersWhere(viewer: Viewer, level: number | null): Prisma.E
 // Completion and last update, for many documents at once
 // ---------------------------------------------------------------------------
 
-export interface ClosingRules {
-  minPerformanceGoals: number;
-  requiredWeightSum: number;
-  minDevelopmentGoals: number;
-}
+export type ClosingRules = ClosingCycleConfig;
 
 export interface CompletionRows {
   rules: ClosingRules;
@@ -112,14 +109,14 @@ export function summarizeDocuments(
       const ackByTemplate = new Map(docAcks.map((ack) => [ack.templateId, ack]));
       const docPerformance = performance.get(document.id) ?? [];
       const docDevelopment = development.get(document.id) ?? [];
-      const input: ClosingInput = {
+      const input: ClosingDocument = {
         groupGoals: rows.templates.map((template) => {
           const ack = ackByTemplate.get(template.id);
           return { type: template.type, isAcknowledged: ack !== undefined, commitment: ack?.hsCommitment ?? null };
         }),
         performanceGoals: docPerformance,
         developmentGoals: docDevelopment,
-        rules: rows.rules,
+        cycle: rows.rules,
       };
       const lastUpdatedAt = latest(document.updatedAt, [
         ...docAcks.map((ack) => ack.acknowledgedAt),

@@ -1,6 +1,7 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
-import { WORKFLOW_COMMENT_MAX_LENGTH, type MissingCondition } from "@/domain/document-status";
+import type { MissingCondition } from "@/domain/closing-conditions";
+import { WORKFLOW_COMMENT_MAX_LENGTH } from "@/domain/document-status";
 import type { Locale } from "@/i18n/config";
 import { formatDate } from "@/i18n/format";
 import type { DocumentWorkflowView, StatusHistoryEntry } from "@/server/workflow";
@@ -14,19 +15,24 @@ import { WorkflowControls } from "./workflow-controls";
 type Props = { workflow: DocumentWorkflowView; titleId: string };
 
 type Translate = Awaited<ReturnType<typeof getTranslations<"workflow">>>;
+type TranslateAny = Awaited<ReturnType<typeof getTranslations<never>>>;
 type DocumentStatus = DocumentWorkflowView["status"];
 
-function missingText(t: Translate, condition: MissingCondition): string {
-  switch (condition.code) {
-    case "minPerformanceGoals":
-    case "minDevelopmentGoals":
-      return t(`conditions.${condition.code}`, { min: condition.min });
-    case "weightSum":
-      return t("conditions.weightSum", { required: condition.required, current: condition.current });
-    case "leadershipAcknowledged":
-    case "valuesAcknowledged":
-    case "safetyCommitment":
-      return t(`conditions.${condition.code}`);
+/**
+ * checkClosingConditions (closing-conditions.ts) hands over the message key and its arguments. One
+ * branch per key keeps next-intl's typed keys and arguments checked.
+ */
+function missingText(t: TranslateAny, condition: MissingCondition): string {
+  switch (condition.key) {
+    case "workflow.conditions.leadershipAcknowledged":
+    case "workflow.conditions.valuesAcknowledged":
+    case "workflow.conditions.safetyCommitment":
+      return t(condition.key);
+    case "workflow.conditions.minPerformanceGoals":
+    case "workflow.conditions.minDevelopmentGoals":
+      return t(condition.key, condition.params);
+    case "workflow.conditions.weightSum":
+      return t(condition.key, condition.params);
   }
 }
 
@@ -42,8 +48,9 @@ const OWNER_NOTICE: Partial<Record<DocumentStatus, "sentNotice" | "approvedNotic
 };
 
 export async function DocumentStatusPanel({ workflow, titleId }: Props) {
-  const [t, tGlossary, locale, messages] = await Promise.all([
+  const [t, tRoot, tGlossary, locale, messages] = await Promise.all([
     getTranslations("workflow"),
+    getTranslations(),
     getTranslations("glossary"),
     getLocale(),
     getMessages(),
@@ -92,7 +99,7 @@ export async function DocumentStatusPanel({ workflow, titleId }: Props) {
               <p className="font-semibold">{t("missing", { items: "" }).trim()}</p>
               <ul className="mt-1.5 list-disc space-y-1 pl-5">
                 {missing.map((condition) => (
-                  <li key={condition.code}>{missingText(t, condition)}</li>
+                  <li key={condition.key}>{missingText(tRoot, condition)}</li>
                 ))}
               </ul>
             </div>

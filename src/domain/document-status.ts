@@ -33,7 +33,7 @@ export interface Transition {
   readonly actor: WorkflowActor;
   /** WF-03: a return must say why. */
   readonly isCommentRequired: boolean;
-  /** WF-C1..C5 must all pass, re-checked on the server inside the transaction. */
+  /** WF-C1..C5 must all pass (closing-conditions.ts), re-checked on the server inside the transaction. */
   readonly requiresClosingConditions: boolean;
 }
 
@@ -112,87 +112,3 @@ export const workflowCommentSchema = z
   .refine((value) => !value.includes("\u0000"), "INVALID_INPUT")
   .nullish()
   .transform((value) => (value ? value : null));
-
-// ---------------------------------------------------------------------------
-// Closing conditions (WF-C1..C5, slide 5)
-// ---------------------------------------------------------------------------
-
-export type ClosingGroupGoalType = "PRZYWODZTWO" | "WARTOSCI" | "BHP";
-export type ClosingGoalState = "SZKIC" | "W_PLANIE" | "ANULOWANY";
-
-export interface ClosingInput {
-  /** One entry per HR template of the cycle. */
-  groupGoals: readonly { type: ClosingGroupGoalType; isAcknowledged: boolean; commitment: string | null }[];
-  performanceGoals: readonly { state: ClosingGoalState; weight: number | null }[];
-  developmentGoals: readonly { state: ClosingGoalState }[];
-  /** Per-cycle rules (Q-03 open, so HR can change them). */
-  rules: { minPerformanceGoals: number; requiredWeightSum: number; minDevelopmentGoals: number };
-}
-
-/** Codes match the `workflow.conditions.*` message keys. */
-export type MissingCondition =
-  | { code: "leadershipAcknowledged" }
-  | { code: "valuesAcknowledged" }
-  | { code: "safetyCommitment" }
-  | { code: "minPerformanceGoals"; min: number; current: number }
-  | { code: "weightSum"; required: number; current: number }
-  | { code: "minDevelopmentGoals"; min: number; current: number };
-
-/**
- * A type with no HR template cannot be confirmed, so it counts as missing: sending a document
- * whose Group goals were never configured would skip WF-C1..C3 silently.
- */
-function isGroupTypeDone(input: ClosingInput, type: ClosingGroupGoalType): boolean {
-  const goals = input.groupGoals.filter((goal) => goal.type === type);
-  if (goals.length === 0) return false;
-  return type === "BHP"
-    ? goals.every((goal) => goal.isAcknowledged && (goal.commitment?.trim() ?? "") !== "")
-    : goals.every((goal) => goal.isAcknowledged);
-}
-
-/** Every unmet condition, in slide order. Empty = the document may be sent. */
-export function missingClosingConditions(input: ClosingInput): MissingCondition[] {
-  const missing: MissingCondition[] = [];
-  if (!isGroupTypeDone(input, "PRZYWODZTWO")) missing.push({ code: "leadershipAcknowledged" });
-  if (!isGroupTypeDone(input, "WARTOSCI")) missing.push({ code: "valuesAcknowledged" });
-  if (!isGroupTypeDone(input, "BHP")) missing.push({ code: "safetyCommitment" });
-
-  const { minPerformanceGoals, requiredWeightSum, minDevelopmentGoals } = input.rules;
-  const performanceInPlan = input.performanceGoals.filter((goal) => goal.state === "W_PLANIE");
-  if (performanceInPlan.length < minPerformanceGoals) {
-    missing.push({ code: "minPerformanceGoals", min: minPerformanceGoals, current: performanceInPlan.length });
-  }
-  const weightSum = performanceInPlan.reduce((sum, goal) => sum + (goal.weight ?? 0), 0);
-  // With no goal in the plan the weight is implied by the missing goals; one message is enough.
-  if (performanceInPlan.length > 0 && weightSum !== requiredWeightSum) {
-    missing.push({ code: "weightSum", required: requiredWeightSum, current: weightSum });
-  }
-  const developmentInPlan = input.developmentGoals.filter((goal) => goal.state === "W_PLANIE").length;
-  if (developmentInPlan < minDevelopmentGoals) {
-    missing.push({ code: "minDevelopmentGoals", min: minDevelopmentGoals, current: developmentInPlan });
-  }
-  return missing;
-}
-
-// ---------------------------------------------------------------------------
-// Completion (WF-21: "% complete" in the team view)
-// ---------------------------------------------------------------------------
-
-/** WF-C1..C5 as six checks: three Group goal types, min performance goals, weight sum, min development goals. */
-export const CLOSING_CONDITION_COUNT = 6;
-
-export interface ClosingProgress {
-  met: number;
-  total: number;
-}
-
-/** How many closing conditions a document already meets. */
-export function closingProgress(input: ClosingInput): ClosingProgress {
-  const missing = missingClosingConditions(input).length;
-  // missingClosingConditions folds the weight sum into "no goal in the plan" (one message is
-  // enough for the owner); for a completion count the weight sum is still unmet then.
-  const hasPerformanceInPlan = input.performanceGoals.some((goal) => goal.state === "W_PLANIE");
-  const isWeightFolded = !hasPerformanceInPlan && input.rules.requiredWeightSum !== 0;
-  const unmet = missing + (isWeightFolded ? 1 : 0);
-  return { met: CLOSING_CONDITION_COUNT - unmet, total: CLOSING_CONDITION_COUNT };
-}

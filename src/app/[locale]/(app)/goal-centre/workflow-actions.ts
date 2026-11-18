@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import type { MissingCondition } from "@/domain/document-status";
+import type { MissingCondition } from "@/domain/closing-conditions";
 import { requireEmployee } from "@/server/current-employee";
 import { db } from "@/server/db";
 import { updateGoalProgress } from "@/server/goal-progress";

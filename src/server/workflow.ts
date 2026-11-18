@@ -8,14 +8,12 @@ import {
   findTransition,
   isCommentRequired,
   isDocumentStatus,
-  missingClosingConditions,
   WORKFLOW_ACTIONS,
   workflowCommentSchema,
-  type ClosingInput,
-  type MissingCondition,
   type Transition,
   type WorkflowAction,
 } from "@/domain/document-status";
+import { checkClosingConditions, type ClosingDocument, type MissingCondition } from "@/domain/closing-conditions";
 import { writeAudit } from "@/server/audit";
 import {
   ForbiddenError,
@@ -27,8 +25,8 @@ import {
 } from "@/server/permissions";
 
 // Document workflow on the server (WF-01..06). The rules - which transitions exist,
-// who makes them, what needs a comment or the closing conditions - live in
-// src/domain/document-status.ts; this module enforces them.
+// who makes them, what needs a comment - live in src/domain/document-status.ts, the closing
+// conditions in src/domain/closing-conditions.ts; this module enforces them.
 //
 // Every status change runs in ONE transaction:
 //   lock the document FOR UPDATE and its cycle FOR SHARE (a concurrent goal write or second click
@@ -95,8 +93,12 @@ export type ClosingReader = Pick<
   "cycle" | "groupGoalTemplate" | "groupGoalAck" | "performanceGoal" | "developmentGoal"
 >;
 
-/** Everything missingClosingConditions needs, read from the database (pass `tx` inside a write). */
-export async function loadClosingInput(db: ClosingReader, documentId: number, cycleId: number): Promise<ClosingInput> {
+/** Everything checkClosingConditions needs, read from the database (pass `tx` inside a write). */
+export async function loadClosingDocument(
+  db: ClosingReader,
+  documentId: number,
+  cycleId: number,
+): Promise<ClosingDocument> {
   const [cycle, templates, acks, performanceGoals, developmentGoals] = await Promise.all([
     db.cycle.findUniqueOrThrow({
       where: { id: cycleId },
@@ -115,7 +117,7 @@ export async function loadClosingInput(db: ClosingReader, documentId: number, cy
     }),
     performanceGoals,
     developmentGoals,
-    rules: cycle,
+    cycle,
   };
 }
 
@@ -189,8 +191,8 @@ export async function transitionDocument(db: WorkflowWriter, viewer: Viewer, inp
     if (locked.cycleStatus !== "OTWARTY") throw new WorkflowError("CYCLE_NOT_OPEN");
 
     if (transition.requiresClosingConditions) {
-      const missing = missingClosingConditions(await loadClosingInput(tx, documentId, locked.cycleId));
-      if (missing.length > 0) throw new WorkflowError("CONDITIONS_NOT_MET", missing);
+      const closing = checkClosingConditions(await loadClosingDocument(tx, documentId, locked.cycleId));
+      if (!closing.ok) throw new WorkflowError("CONDITIONS_NOT_MET", closing.missing);
     }
 
     const isValidatorAction = transition.actor === "VALIDATOR";
@@ -275,7 +277,7 @@ export async function loadDocumentWorkflow(
       },
     }),
     actions.includes("SEND")
-      ? loadClosingInput(db, documentId, access.cycleId).then(missingClosingConditions)
+      ? loadClosingDocument(db, documentId, access.cycleId).then((document) => checkClosingConditions(document).missing)
       : Promise.resolve([]),
   ]);
   return {

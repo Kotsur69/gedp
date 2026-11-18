@@ -450,7 +450,10 @@ describe("transitionDocument - refusals leave no trace", () => {
       "CONDITIONS_NOT_MET",
       409,
     );
-    expect(error.missing).toEqual([{ code: "valuesAcknowledged" }, { code: "weightSum", required: 100, current: 60 }]);
+    expect(error.missing).toEqual([
+      { condition: "WF-C2", key: "workflow.conditions.valuesAcknowledged", params: {} },
+      { condition: "WF-C4", key: "workflow.conditions.weightSum", params: { required: 100, current: 60 } },
+    ]);
     expect(fake.state.documents[0]?.status).toBe("SZKIC");
     expect(fake.state.history).toEqual([]);
     expect(fake.state.audit).toEqual([]);
@@ -686,7 +689,9 @@ describe("loadDocumentWorkflow", () => {
     const fake = createFakeDb(initial);
     const view = await loadDocumentWorkflow(fake.as(viewer(A)), viewer(A), DOC_A, "OTWARTY");
     expect(view).toMatchObject({ status: "SZKIC", isOwner: true, actions: ["SEND"] });
-    expect(view.missing).toEqual([{ code: "minDevelopmentGoals", min: 1, current: 0 }]);
+    expect(view.missing).toEqual([
+      { condition: "WF-C5", key: "workflow.conditions.minDevelopmentGoals", params: { min: 1, current: 0 } },
+    ]);
   });
 
   it("the validator gets approve and return; history comes oldest first with the author's name", async () => {
