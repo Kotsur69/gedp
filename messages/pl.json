@@ -450,7 +450,41 @@
     "comment": "Komentarz",
     "revertStatus": "Cofnij status",
     "revertReason": "Powód cofnięcia",
-    "revertReasonRequired": "Podaj powód cofnięcia statusu"
+    "revertReasonRequired": "Podaj powód cofnięcia statusu",
+    "panelTitle": "Status dokumentu",
+    "currentStatus": "Status: {status}",
+    "sendHint": "Po wysłaniu dokument trafi do przełożonego (N+1). Do czasu jego decyzji cele są tylko do podglądu.",
+    "readyToSend": "Wszystkie warunki wysłania są spełnione.",
+    "sentNotice": "Dokument czeka na walidację przełożonego. Do czasu decyzji cele są tylko do podglądu.",
+    "approvedNotice": "Dokument jest zatwierdzony. W ciągu roku możesz aktualizować tylko postęp celów.",
+    "returnedNotice": "Przełożony zwrócił dokument do poprawy. Popraw cele i wyślij dokument ponownie.",
+    "returnedComment": "Komentarz przełożonego: {comment}",
+    "validatorIntro": "Sprawdź cele pracownika, a następnie zatwierdź dokument albo zwróć go do poprawy z komentarzem.",
+    "returnSubmit": "Zwróć dokument",
+    "commentHelp": "Pracownik zobaczy komentarz w historii dokumentu.",
+    "commentCount": "{count} / {max}",
+    "historyEmpty": "Brak zmian statusu.",
+    "created": "Utworzenie dokumentu",
+    "transition": "{from} → {to}",
+    "progressFor": "Postęp celu: {title}",
+    "done": {
+      "SEND": "Dokument wysłany do walidacji.",
+      "APPROVE": "Dokument zatwierdzony.",
+      "RETURN": "Dokument zwrócony do poprawy.",
+      "progress": "Zapisano postęp."
+    },
+    "errors": {
+      "INVALID_INPUT": "Nieprawidłowe dane. Odśwież stronę i spróbuj ponownie.",
+      "COMMENT_REQUIRED": "Podaj powód zwrotu.",
+      "COMMENT_TOO_LONG": "Komentarz może mieć najwyżej {max} znaków.",
+      "ILLEGAL_TRANSITION": "Status dokumentu zmienił się w międzyczasie. Strona pokazuje teraz aktualny stan.",
+      "CYCLE_NOT_OPEN": "Ten rok jest tylko do podglądu.",
+      "CONDITIONS_NOT_MET": "Dokument nie spełnia jeszcze warunków wysłania.",
+      "NOT_EDITABLE": "Tego celu nie można teraz zmienić.",
+      "GOAL_NOT_IN_PLAN": "Postęp można zmieniać tylko dla celów dodanych do planu.",
+      "FORBIDDEN": "Nie masz uprawnień do tej operacji.",
+      "FAILED": "Nie udało się zapisać. Spróbuj ponownie."
+    }
   },
   "team": {
     "title": "Mój zespół",
@@ -464,7 +498,17 @@
     "lastUpdate": "Ostatnia aktualizacja",
     "openDocument": "Otwórz dokument",
     "validateDocument": "Waliduj dokument",
-    "empty": "Nie masz podwładnych w tym cyklu."
+    "empty": "Nie masz podwładnych w tym cyklu.",
+    "toValidateTitle": "Dokumenty do walidacji",
+    "toValidateEmpty": "Nie masz dokumentów czekających na walidację.",
+    "fullTeamComingSoon": "Pełny widok zespołu (lista podwładnych ze statusami dokumentów) przygotowujemy.",
+    "backToTeam": "Wróć do zespołu",
+    "documentOf": "Dokument: {name}",
+    "acknowledgedOn": "Potwierdzono {date}",
+    "notAcknowledged": "Nie potwierdzono",
+    "commitment": "Zobowiązanie: {text}",
+    "noGoals": "Brak celów w tej części.",
+    "dates": "{start} – {end}"
   },
   "admin": {
     "title": "Panel administratora",

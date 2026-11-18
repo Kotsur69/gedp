@@ -450,7 +450,41 @@
     "comment": "Comment",
     "revertStatus": "Revert status",
     "revertReason": "Reason for reverting",
-    "revertReasonRequired": "Please give a reason for reverting the status"
+    "revertReasonRequired": "Please give a reason for reverting the status",
+    "panelTitle": "Document status",
+    "currentStatus": "Status: {status}",
+    "sendHint": "Once sent, the document goes to your manager (N+1). Until they decide, your goals are view only.",
+    "readyToSend": "All conditions for sending are met.",
+    "sentNotice": "The document is waiting for your manager's validation. Until they decide, your goals are view only.",
+    "approvedNotice": "The document is approved. During the year you can only update the progress of your goals.",
+    "returnedNotice": "Your manager returned the document for correction. Correct your goals and send it again.",
+    "returnedComment": "Manager's comment: {comment}",
+    "validatorIntro": "Review the employee's goals, then approve the document or return it for correction with a comment.",
+    "returnSubmit": "Return the document",
+    "commentHelp": "The employee will see the comment in the document history.",
+    "commentCount": "{count} / {max}",
+    "historyEmpty": "No status changes yet.",
+    "created": "Document created",
+    "transition": "{from} → {to}",
+    "progressFor": "Progress of goal: {title}",
+    "done": {
+      "SEND": "Document sent for validation.",
+      "APPROVE": "Document approved.",
+      "RETURN": "Document returned for correction.",
+      "progress": "Progress saved."
+    },
+    "errors": {
+      "INVALID_INPUT": "Invalid data. Refresh the page and try again.",
+      "COMMENT_REQUIRED": "Please give a reason for the return.",
+      "COMMENT_TOO_LONG": "The comment can be at most {max} characters long.",
+      "ILLEGAL_TRANSITION": "The document status changed in the meantime. The page now shows the current state.",
+      "CYCLE_NOT_OPEN": "This year is view only.",
+      "CONDITIONS_NOT_MET": "The document does not meet the conditions for sending yet.",
+      "NOT_EDITABLE": "This goal cannot be changed now.",
+      "GOAL_NOT_IN_PLAN": "Progress can only be changed for goals added to the plan.",
+      "FORBIDDEN": "You are not allowed to do this.",
+      "FAILED": "Saving failed. Please try again."
+    }
   },
   "team": {
     "title": "My team",
@@ -464,7 +498,17 @@
     "lastUpdate": "Last update",
     "openDocument": "Open document",
     "validateDocument": "Validate document",
-    "empty": "You have no reports in this cycle."
+    "empty": "You have no reports in this cycle.",
+    "toValidateTitle": "Documents to validate",
+    "toValidateEmpty": "No documents are waiting for your validation.",
+    "fullTeamComingSoon": "The full team view (reports with their document status) is being prepared.",
+    "backToTeam": "Back to team",
+    "documentOf": "Document: {name}",
+    "acknowledgedOn": "Acknowledged on {date}",
+    "notAcknowledged": "Not acknowledged",
+    "commitment": "Commitment: {text}",
+    "noGoals": "No goals in this part.",
+    "dates": "{start} – {end}"
   },
   "admin": {
     "title": "Administrator panel",

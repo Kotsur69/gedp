@@ -69,8 +69,8 @@ async function PerformanceGoals() {
   const isSent = part2 !== null && !isReadOnly && !part2.canChange;
 
   // The client part gets only the messages it renders.
-  const { performanceGoals, goalControls, goalCentre, glossary, common } = await getMessages();
-  const clientMessages = { performanceGoals, goalControls, goalCentre, glossary, common };
+  const { performanceGoals, goalControls, goalCentre, glossary, common, workflow } = await getMessages();
+  const clientMessages = { performanceGoals, goalControls, goalCentre, glossary, common, workflow };
 
   return (
     <Panel labelledBy="performance-goals-title">
@@ -141,6 +141,7 @@ async function PerformanceGoals() {
             documentId={part2?.documentId ?? null}
             canChange={part2?.canChange ?? false}
             wasSent={wasSent}
+            canUpdateProgress={part2?.canUpdateProgress ?? false}
             copyable={copyable}
           />
         </NextIntlClientProvider>

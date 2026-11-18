@@ -62,8 +62,8 @@ async function DevelopmentGoals() {
   const isSent = part3 !== null && !isReadOnly && !part3.canChange;
 
   // The client part gets only the messages it renders.
-  const { developmentGoals, goalCentre, glossary, common } = await getMessages();
-  const clientMessages = { developmentGoals, goalCentre, glossary, common };
+  const { developmentGoals, goalCentre, glossary, common, workflow } = await getMessages();
+  const clientMessages = { developmentGoals, goalCentre, glossary, common, workflow };
 
   return (
     <Panel labelledBy="development-goals-title">
@@ -134,6 +134,7 @@ async function DevelopmentGoals() {
             documentId={part3?.documentId ?? null}
             canChange={part3?.canChange ?? false}
             wasSent={part3?.wasSent ?? false}
+            canUpdateProgress={part3?.canUpdateProgress ?? false}
           />
         </NextIntlClientProvider>
       </div>

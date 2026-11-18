@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { CycleStatus, DocumentStatus, GroupGoalType } from "@/generated/prisma/enums";
+import { EDITABLE_DOCUMENT_STATUSES } from "@/domain/document-status";
 import { writeAudit } from "@/server/audit";
 import { ForbiddenError, requireDocumentPermission, type Viewer } from "@/server/permissions";
 
@@ -24,8 +25,8 @@ export const BHP_COMMITMENT_MAX_LENGTH = 1000;
 // Same rule as cycles.ts isCycleReadOnly; not imported because cycles.ts pulls in the auth session.
 const isCycleReadOnly = (status: CycleStatus): boolean => status !== "OTWARTY";
 
-/** Statuses in which the owner may still change the document ([ZAŁ]: returned counts as not sent). */
-export const EDITABLE_DOCUMENT_STATUSES: readonly DocumentStatus[] = ["SZKIC", "ZWROCONY"];
+/** Statuses in which the owner may still change the document; the rule lives in the workflow domain. */
+export { EDITABLE_DOCUMENT_STATUSES };
 
 const MAX_INT4 = 2_147_483_647;
 const dbIdSchema = z.number().int().min(1).max(MAX_INT4);

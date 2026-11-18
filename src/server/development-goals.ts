@@ -18,7 +18,7 @@ import {
 import { progressFromPercent, progressToPercent } from "@/domain/performance-goal";
 import { writeAudit } from "@/server/audit";
 import { fromIsoDate, lockOwnGoalDocument, toIsoDate, wasDocumentSent, type LockedGoalDocument } from "@/server/goal-document";
-import { EDITABLE_DOCUMENT_STATUSES } from "@/server/group-goals";
+import { EDITABLE_DOCUMENT_STATUSES, goalEditScope } from "@/domain/document-status";
 import { ForbiddenError, NotFoundError, requireDocumentPermission, type Viewer } from "@/server/permissions";
 
 // Goal Centre, Part 3: server operations on development goals (G3-01..05, G3-10..16, G3-20, G3-21).
@@ -191,6 +191,8 @@ export interface DevelopmentGoalsForDocument {
   status: DocumentStatus;
   /** The viewer may add, edit, delete or cancel goals right now. */
   canChange: boolean;
+  /** WF-05: approved document, open cycle, owner - only the progress of goals in the plan may change. */
+  canUpdateProgress: boolean;
   /** Sent at least once: goals can be cancelled, no longer deleted. */
   wasSent: boolean;
   goals: DevelopmentGoalView[];
@@ -217,6 +219,7 @@ export async function loadDevelopmentGoals(
       access.employeeId === viewer.id &&
       cycleStatus === "OTWARTY" &&
       EDITABLE_DOCUMENT_STATUSES.includes(access.status),
+    canUpdateProgress: access.employeeId === viewer.id && goalEditScope(access.status, cycleStatus === "OTWARTY") === "PROGRESS_ONLY",
     wasSent,
     goals,
     counters: developmentGoalCounters(goals),

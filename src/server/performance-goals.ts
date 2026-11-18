@@ -22,7 +22,7 @@ import {
 } from "@/domain/performance-goal";
 import { writeAudit } from "@/server/audit";
 import { fromIsoDate, lockOwnGoalDocument, toIsoDate, type LockedGoalDocument } from "@/server/goal-document";
-import { EDITABLE_DOCUMENT_STATUSES } from "@/server/group-goals";
+import { EDITABLE_DOCUMENT_STATUSES, goalEditScope } from "@/domain/document-status";
 import { ForbiddenError, NotFoundError, requireDocumentPermission, type Viewer } from "@/server/permissions";
 
 // Goal Centre, Part 2: server operations on performance goals (G2-10..26).
@@ -216,6 +216,8 @@ export interface PerformanceGoalsForDocument {
   status: DocumentStatus;
   /** The viewer may add, edit, delete or cancel goals right now. */
   canChange: boolean;
+  /** WF-05: approved document, open cycle, owner - only the progress of goals in the plan may change. */
+  canUpdateProgress: boolean;
   goals: PerformanceGoalView[];
   counters: PerformanceGoalCounters;
 }
@@ -237,6 +239,7 @@ export async function loadPerformanceGoals(
       access.employeeId === viewer.id &&
       cycleStatus === "OTWARTY" &&
       EDITABLE_DOCUMENT_STATUSES.includes(access.status),
+    canUpdateProgress: access.employeeId === viewer.id && goalEditScope(access.status, cycleStatus === "OTWARTY") === "PROGRESS_ONLY",
     goals,
     counters: performanceGoalCounters(goals),
   };

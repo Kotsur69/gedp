@@ -4,6 +4,7 @@ import Link from "next/link";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ChevronRightIcon } from "@/components/shell/icons";
+import { DocumentStatusPanel } from "@/components/workflow/document-status-panel";
 import { developmentGoalCounters } from "@/domain/development-goal";
 import { performanceGoalCounters } from "@/domain/performance-goal";
 import type { Locale } from "@/i18n/config";
@@ -13,6 +14,7 @@ import { getSelectedCycle } from "@/server/cycles";
 import { db } from "@/server/db";
 import { loadDevelopmentGoals } from "@/server/development-goals";
 import { loadPerformanceGoals } from "@/server/performance-goals";
+import { loadDocumentWorkflow } from "@/server/workflow";
 import {
   aggregateCounters,
   BHP_COMMITMENT_MAX_LENGTH,
@@ -75,7 +77,7 @@ async function GoalCentre() {
   }
 
   const document = await ensureOwnDocument(db(), viewer, cycle);
-  const [part1, part2, part3] = await Promise.all([
+  const [part1, part2, part3, workflow] = await Promise.all([
     document
       ? loadGroupGoals(db(), viewer, document.id, cycle.status)
       : loadGroupGoalTemplates(db(), cycle.id).then((goals) => ({
@@ -86,6 +88,7 @@ async function GoalCentre() {
         })),
     document ? loadPerformanceGoals(db(), viewer, document.id, cycle.status) : null,
     document ? loadDevelopmentGoals(db(), viewer, document.id, cycle.status) : null,
+    document ? loadDocumentWorkflow(db(), viewer, document.id, cycle.status) : null,
   ]);
 
   const groupCounters = groupGoalCounters(part1.goals);
@@ -147,6 +150,9 @@ async function GoalCentre() {
           />
         </div>
       </Panel>
+
+      {/* WF-01..06: status, "Wyślij do walidacji" with what is missing, and the history. */}
+      {workflow && <DocumentStatusPanel workflow={workflow} titleId="document-status-title" />}
 
       <Panel labelledBy="group-goals-title">
         <h2 id="group-goals-title" className="text-2xl font-semibold text-ink">

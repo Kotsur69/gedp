@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { GoalProgressSelect } from "@/components/goals/goal-progress-select";
 import { PencilIcon, PlusIcon, TrashIcon } from "@/components/shell/icons";
 import type { DevelopmentGoalContext } from "@/domain/development-goal";
 import type { Locale } from "@/i18n/config";
@@ -22,9 +23,11 @@ type ListProps = {
   documentId: number | null;
   canChange: boolean;
   wasSent: boolean;
+  /** WF-05: approved document - goals in the plan get a progress select, nothing else changes. */
+  canUpdateProgress: boolean;
 };
 
-export function DevelopmentGoalList({ goals, context, documentId, canChange, wasSent }: ListProps) {
+export function DevelopmentGoalList({ goals, context, documentId, canChange, wasSent, canUpdateProgress }: ListProps) {
   const t = useTranslations("developmentGoals");
   const [target, setTarget] = useState<DialogTarget | null>(null);
   const mayAdd = canChange && documentId !== null;
@@ -54,6 +57,7 @@ export function DevelopmentGoalList({ goals, context, documentId, canChange, was
               context={context}
               mayEdit={mayAdd && goal.state !== "ANULOWANY"}
               mayDelete={mayAdd && !wasSent}
+              mayUpdateProgress={canUpdateProgress && goal.state === "W_PLANIE"}
               onOpen={(kind) => setTarget({ kind, goalId: goal.id })}
             />
           </li>
@@ -82,10 +86,11 @@ type CardProps = {
   context: DevelopmentGoalContext;
   mayEdit: boolean;
   mayDelete: boolean;
+  mayUpdateProgress: boolean;
   onOpen: (kind: "view" | "edit" | "confirmDelete") => void;
 };
 
-function GoalCard({ goal, context, mayEdit, mayDelete, onOpen }: CardProps) {
+function GoalCard({ goal, context, mayEdit, mayDelete, mayUpdateProgress, onOpen }: CardProps) {
   const t = useTranslations("developmentGoals");
   const tGlossary = useTranslations("glossary");
   const locale = useLocale() as Locale;
@@ -121,6 +126,11 @@ function GoalCard({ goal, context, mayEdit, mayDelete, onOpen }: CardProps) {
             style={{ width: `${PROGRESS_FILL_PERCENT[goal.progress]}%` }}
           />
         </div>
+        {mayUpdateProgress && (
+          <div className="mt-3">
+            <GoalProgressSelect part="DEVELOPMENT" goalId={goal.id} value={goal.progress} goalName={competency} />
+          </div>
+        )}
         {(mayEdit || mayDelete) && (
           <div className="relative z-10 mt-3 flex justify-end gap-1">
             {mayEdit && (

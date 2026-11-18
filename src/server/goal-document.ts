@@ -1,6 +1,6 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
-import { EDITABLE_DOCUMENT_STATUSES } from "@/server/group-goals";
+import { goalEditScope, isDocumentStatus, type GoalEditScope } from "@/domain/document-status";
 import { ForbiddenError, requireDocumentPermission, type Viewer } from "@/server/permissions";
 
 // Shared by the goal writers of Parts 2 and 3 (performance-goals.ts, development-goals.ts): the
@@ -11,7 +11,9 @@ type Tx = Prisma.TransactionClient;
 export interface LockedGoalDocument {
   cycleId: number;
   cycleYear: number;
-  /** Cycle OTWARTY and document SZKIC or ZWROCONY. The caller throws its own NOT_EDITABLE. */
+  /** WF-02 / WF-05 lock for the owner (document-status.ts); NONE when the cycle is not open. */
+  editScope: GoalEditScope;
+  /** editScope FULL: cycle OTWARTY and document SZKIC or ZWROCONY. The caller throws its own NOT_EDITABLE. */
   isEditable: boolean;
   /** Has gone to validation at least once (a returned document counts as sent). */
   wasSent: boolean;
@@ -48,14 +50,16 @@ export async function lockOwnGoalDocument(tx: Tx, viewer: Viewer, documentId: nu
   // Missing documents fall through to the permission check, which reports them as not found.
   const access = await requireDocumentPermission(tx, viewer, documentId, "edit");
   if (access.employeeId !== viewer.id) throw new ForbiddenError("edit", `document ${documentId}: owner only`);
-  if (!locked) return { cycleId: access.cycleId, cycleYear: 0, isEditable: false, wasSent: false };
+  if (!locked) return { cycleId: access.cycleId, cycleYear: 0, editScope: "NONE", isEditable: false, wasSent: false };
 
+  const editScope = isDocumentStatus(locked.documentStatus)
+    ? goalEditScope(locked.documentStatus, locked.cycleStatus === "OTWARTY")
+    : "NONE";
   return {
     cycleId: locked.cycleId,
     cycleYear: locked.cycleYear,
-    isEditable:
-      locked.cycleStatus === "OTWARTY" &&
-      (EDITABLE_DOCUMENT_STATUSES as readonly string[]).includes(locked.documentStatus),
+    editScope,
+    isEditable: editScope === "FULL",
     wasSent: await wasDocumentSent(tx, documentId),
   };
 }

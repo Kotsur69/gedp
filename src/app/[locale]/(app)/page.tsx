@@ -14,6 +14,7 @@ import { loadUnseenStartAnnouncement } from "@/server/content";
 import { getSelectedCycle } from "@/server/cycles";
 import { db } from "@/server/db";
 import { buildHomeTasks, loadOwnDocumentSummary, loadPublishedContent, type HomeTask } from "@/server/home";
+import { summarizeDocumentsToValidate } from "@/server/workflow";
 
 export function generateMetadata() {
   return screenMetadata("gedpCycle");
@@ -37,12 +38,13 @@ async function Dashboard() {
     getLocale(),
     getTranslations(),
   ]);
-  const [intro, announcement, document] = await Promise.all([
+  const [intro, announcement, document, toValidate] = await Promise.all([
     loadPublishedContent(db(), "TEKST_POWITALNY", locale),
     loadUnseenStartAnnouncement(db(), employee.id, locale),
     cycle ? loadOwnDocumentSummary(db(), employee.id, cycle.year) : null,
+    cycle ? summarizeDocumentsToValidate(db(), employee, cycle.year) : undefined,
   ]);
-  const tasks = await toTaskCards(buildHomeTasks({ cycle, document }), cycle?.year ?? null, locale);
+  const tasks = await toTaskCards(buildHomeTasks({ cycle, document, toValidate }), cycle?.year ?? null, locale);
 
   return (
     <div className="flex flex-col gap-6">
@@ -148,9 +150,18 @@ async function toTaskCards(tasks: readonly HomeTask[], year: number | null, loca
           title: t("tasks.fillGoals"),
           description: t("tasks.fillGoalsDescription", { year: year ?? "" }),
         };
+      case "DOCUMENT_RETURNED":
+        return { ...common, title: t("tasks.documentReturned"), description: t("tasks.documentReturnedDescription") };
+      case "DOCUMENTS_TO_VALIDATE":
+        return {
+          ...common,
+          title: t("tasks.documentsToValidate"),
+          description: t("tasks.documentsToValidateDescription", { count: task.count ?? 0 }),
+        };
     }
   });
 }
+
 
 const YEAR_INFO_ID = "year-info";
 

@@ -48,30 +48,46 @@ export async function loadOwnDocumentSummary(
   });
 }
 
-// More kinds arrive with the workflow (WF): DOCUMENT_RETURNED, DOCUMENTS_TO_VALIDATE.
-export type HomeTaskKind = "FILL_GOALS";
+/** FILL_GOALS and DOCUMENT_RETURNED are the owner's; DOCUMENTS_TO_VALIDATE is the validator's (WF-03). */
+export type HomeTaskKind = "FILL_GOALS" | "DOCUMENT_RETURNED" | "DOCUMENTS_TO_VALIDATE";
 
 export interface HomeTask {
   kind: HomeTaskKind;
   href: string;
   /** Null when the underlying record does not exist yet. */
   updatedAt: Date | null;
+  /** DOCUMENTS_TO_VALIDATE only: how many documents wait. */
+  count?: number;
 }
 
 export interface HomeTaskInput {
   cycle: { year: number; isReadOnly: boolean } | null;
   document: OwnDocumentSummary | null;
+  /** Documents of the cycle waiting for this person's validation (see workflow.ts). */
+  toValidate?: { count: number; lastUpdatedAt: Date | null };
 }
 
 /**
  * "Moje zadania" (HOME-14). Only an open cycle produces tasks. "Fill in goals" stays until the
  * document leaves SZKIC; before the first Goal Centre visit there is no document yet, which is
- * the same to-do.
+ * the same to-do. A returned document asks for corrections; a validator with waiting documents
+ * gets one task for all of them.
  */
-export function buildHomeTasks({ cycle, document }: HomeTaskInput): HomeTask[] {
+export function buildHomeTasks({ cycle, document, toValidate }: HomeTaskInput): HomeTask[] {
   if (!cycle || cycle.isReadOnly) return [];
+  const tasks: HomeTask[] = [];
   if (document === null || document.status === "SZKIC") {
-    return [{ kind: "FILL_GOALS", href: "/goal-centre", updatedAt: document?.updatedAt ?? null }];
+    tasks.push({ kind: "FILL_GOALS", href: "/goal-centre", updatedAt: document?.updatedAt ?? null });
+  } else if (document.status === "ZWROCONY") {
+    tasks.push({ kind: "DOCUMENT_RETURNED", href: "/goal-centre", updatedAt: document.updatedAt });
   }
-  return [];
+  if (toValidate && toValidate.count > 0) {
+    tasks.push({
+      kind: "DOCUMENTS_TO_VALIDATE",
+      href: "/team",
+      updatedAt: toValidate.lastUpdatedAt,
+      count: toValidate.count,
+    });
+  }
+  return tasks;
 }

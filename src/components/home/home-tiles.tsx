@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { DocumentStatus } from "@/generated/prisma/enums";
 import { CompassIcon, DocumentIcon } from "@/components/shell/icons";
+import { DOCUMENT_STATUS_TONE as STATUS_TONE } from "@/components/workflow/status-tone";
 
 // HOME-13: tiles of the "Cykl GEDP" tab. "Continuous feedback" and "My potential" are LATER.
 
@@ -12,15 +13,6 @@ type Props = {
   /** null = the person has no document for this year yet. */
   documentStatus: DocumentStatus | null;
   documentStatusText: string;
-};
-
-// The status text always carries the meaning; the tone only reinforces it.
-const STATUS_TONE: Readonly<Record<DocumentStatus | "NONE", string>> = {
-  NONE: "border-line-strong text-ink-soft",
-  SZKIC: "border-line-strong text-ink",
-  DO_WALIDACJI: "border-accent/50 text-accent",
-  ZWROCONY: "border-brand-orange/60 bg-notice-surface text-notice",
-  ZATWIERDZONY: "border-transparent bg-accent text-on-brand",
 };
 
 const TILE =

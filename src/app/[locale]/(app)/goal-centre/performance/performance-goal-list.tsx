@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { GoalProgressSelect } from "@/components/goals/goal-progress-select";
 import { CopyIcon, PencilIcon, PlusIcon, TrashIcon } from "@/components/shell/icons";
 import type { PerformanceGoalContext } from "@/domain/performance-goal";
 import type { Locale } from "@/i18n/config";
@@ -32,10 +33,12 @@ type ListProps = {
   documentId: number | null;
   canChange: boolean;
   wasSent: boolean;
+  /** WF-05: approved document - goals in the plan get a progress select, nothing else changes. */
+  canUpdateProgress: boolean;
   copyable: { previousYear: number; count: number };
 };
 
-export function PerformanceGoalList({ goals, context, documentId, canChange, wasSent, copyable }: ListProps) {
+export function PerformanceGoalList({ goals, context, documentId, canChange, wasSent, canUpdateProgress, copyable }: ListProps) {
   const t = useTranslations("performanceGoals");
   const [target, setTarget] = useState<DialogTarget | null>(null);
   const [isCopyOpen, setIsCopyOpen] = useState(false);
@@ -78,6 +81,7 @@ export function PerformanceGoalList({ goals, context, documentId, canChange, was
                 context={context}
                 mayEdit={mayAdd && goal.state !== "ANULOWANY"}
                 mayDelete={mayAdd && !wasSent}
+                mayUpdateProgress={canUpdateProgress && goal.state === "W_PLANIE"}
                 onOpen={(kind) => setTarget({ kind, goalId: goal.id })}
               />
             </li>
@@ -122,10 +126,11 @@ type CardProps = {
   context: PerformanceGoalContext;
   mayEdit: boolean;
   mayDelete: boolean;
+  mayUpdateProgress: boolean;
   onOpen: (kind: "view" | "edit" | "confirmDelete") => void;
 };
 
-function GoalCard({ goal, context, mayEdit, mayDelete, onOpen }: CardProps) {
+function GoalCard({ goal, context, mayEdit, mayDelete, mayUpdateProgress, onOpen }: CardProps) {
   const t = useTranslations("performanceGoals");
   const tGlossary = useTranslations("glossary");
   const locale = useLocale() as Locale;
@@ -175,6 +180,11 @@ function GoalCard({ goal, context, mayEdit, mayDelete, onOpen }: CardProps) {
         <div aria-hidden="true" className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-wash-cool/60">
           <div className="h-full origin-left rounded-full bg-(image:--am-gradient)" style={{ transform: `scaleX(${fill})` }} />
         </div>
+        {mayUpdateProgress && (
+          <div className="mt-3">
+            <GoalProgressSelect part="PERFORMANCE" goalId={goal.id} value={goal.progress} goalName={goal.title} />
+          </div>
+        )}
         {(mayEdit || mayDelete) && (
           <div className="relative z-10 mt-3 flex justify-end gap-1">
             {mayEdit && (

@@ -17,12 +17,41 @@ describe("buildHomeTasks", () => {
     expect(tasks).toEqual([{ kind: "FILL_GOALS", href: "/goal-centre", updatedAt: null }]);
   });
 
-  it.each(["DO_WALIDACJI", "ZWROCONY", "ZATWIERDZONY"] as const)("has no fill-in task once the document is %s", (status) => {
+  it.each(["DO_WALIDACJI", "ZATWIERDZONY"] as const)("has no owner task once the document is %s", (status) => {
     const tasks = buildHomeTasks({
       cycle: { year: 2027, isReadOnly: false },
       document: { status, updatedAt: UPDATED },
     });
     expect(tasks).toEqual([]);
+  });
+
+  it("a returned document becomes 'Dokument zwrócony do poprawy'", () => {
+    const tasks = buildHomeTasks({
+      cycle: { year: 2027, isReadOnly: false },
+      document: { status: "ZWROCONY", updatedAt: UPDATED },
+    });
+    expect(tasks).toEqual([{ kind: "DOCUMENT_RETURNED", href: "/goal-centre", updatedAt: UPDATED }]);
+  });
+
+  it("a validator with waiting documents gets one 'Dokumenty do walidacji' task next to their own", () => {
+    const tasks = buildHomeTasks({
+      cycle: { year: 2027, isReadOnly: false },
+      document: { status: "SZKIC", updatedAt: UPDATED },
+      toValidate: { count: 3, lastUpdatedAt: UPDATED },
+    });
+    expect(tasks).toEqual([
+      { kind: "FILL_GOALS", href: "/goal-centre", updatedAt: UPDATED },
+      { kind: "DOCUMENTS_TO_VALIDATE", href: "/team", updatedAt: UPDATED, count: 3 },
+    ]);
+  });
+
+  it("no validation task when nothing waits or the year is view-only", () => {
+    const approved = { status: "ZATWIERDZONY" as const, updatedAt: UPDATED };
+    const open = { year: 2027, isReadOnly: false };
+    expect(buildHomeTasks({ cycle: open, document: approved, toValidate: { count: 0, lastUpdatedAt: null } })).toEqual([]);
+    expect(
+      buildHomeTasks({ cycle: { ...open, isReadOnly: true }, document: approved, toValidate: { count: 2, lastUpdatedAt: UPDATED } }),
+    ).toEqual([]);
   });
 
   it("has no tasks in a view-only year or without a cycle", () => {
