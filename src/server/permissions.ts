@@ -199,6 +199,20 @@ export async function requireEmployeePermission(
   return permissions;
 }
 
+/**
+ * HR-only operations (HR panel, WF-08 revert, WF-09 override): the session flag is a snapshot, so
+ * the live row must still be an active HR admin. Pass `tx` to make the check part of the write;
+ * a demoted or deactivated HR user is refused at once.
+ */
+export async function requireActiveHrAdmin(db: Pick<PermissionReader, "employee">, viewer: Viewer): Promise<void> {
+  if (!viewer.isHrAdmin) throw new ForbiddenError("edit", "HR only");
+  const current = await db.employee.findFirst({
+    where: { id: viewer.id, isActive: true, isHrAdmin: true },
+    select: { id: true },
+  });
+  if (!current) throw new ForbiddenError("edit", "active HR only");
+}
+
 export async function canViewEmployee(db: PermissionReader, viewer: Viewer, employeeId: number): Promise<boolean> {
   return (await permissionsForEmployee(db, viewer, employeeId)).view;
 }

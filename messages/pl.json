@@ -486,7 +486,9 @@
       "NOT_EDITABLE": "Tego celu nie można teraz zmienić.",
       "GOAL_NOT_IN_PLAN": "Postęp można zmieniać tylko dla celów dodanych do planu.",
       "FORBIDDEN": "Nie masz uprawnień do tej operacji.",
-      "FAILED": "Nie udało się zapisać. Spróbuj ponownie."
+      "FAILED": "Nie udało się zapisać. Spróbuj ponownie.",
+      "REASON_REQUIRED": "Podaj powód cofnięcia statusu.",
+      "STATUS_CHANGED": "Status dokumentu zmienił się w międzyczasie. Lista pokazuje teraz aktualny stan."
     }
   },
   "team": {
@@ -657,7 +659,8 @@
       "whiteCollar": "White Collar",
       "active": "Aktywny",
       "hrAdmin": "Administrator HR",
-      "hireDate": "Data zatrudnienia"
+      "hireDate": "Data zatrudnienia",
+      "validatorOverride": "Walidator zastępczy"
     },
     "employees": {
       "title": "Pracownicy",
@@ -688,7 +691,8 @@
         "saving": "Zapisywanie…",
         "saved": "Zapisano zmiany: {name}.",
         "unchanged": "Bez zmian: {name}.",
-        "reload": "Wczytaj aktualne dane"
+        "reload": "Wczytaj aktualne dane",
+        "validatorOverrideHint": "AMEI osoby, która zatwierdza dokumenty tego pracownika obok przełożonego. Potrzebny, gdy pracownik nie ma przełożonego. Puste pole oznacza brak."
       },
       "errors": {
         "INVALID_INPUT": "Popraw zaznaczone pola.",
@@ -702,8 +706,13 @@
         "STALE": "Ktoś zmienił dane tej osoby w międzyczasie. Wczytaj aktualne dane i wprowadź swoje zmiany ponownie.",
         "NOT_FOUND": "Nie znaleziono tej osoby. Odśwież listę.",
         "FORBIDDEN": "Tylko HR może edytować dane pracowników.",
-        "FAILED": "Nie udało się zapisać zmian. Spróbuj ponownie."
-      }
+        "FAILED": "Nie udało się zapisać zmian. Spróbuj ponownie.",
+        "SELF_VALIDATOR": "Pracownik nie może walidować własnego dokumentu.",
+        "UNKNOWN_VALIDATOR": "Nie ma pracownika o tym AMEI.",
+        "INACTIVE_VALIDATOR": "Ta osoba nie może się zalogować (jest nieaktywna lub spoza White Collar), więc nie zatwierdzi dokumentu."
+      },
+      "overrideLabel": "Walidator zastępczy:",
+      "noValidator": "Brak walidatora - wskaż walidatora zastępczego"
     },
     "cycles": {
       "newAsCopy": "Nowy cykl jako kopia poprzedniego",
@@ -741,6 +750,41 @@
       "before": "Przed",
       "after": "Po",
       "exportEmployeeData": "Eksportuj wszystkie dane pracownika"
+    },
+    "documents": {
+      "cardHint": "Statusy dokumentów, walidatorzy i cofanie statusu",
+      "title": "Dokumenty",
+      "intro": "Statusy dokumentów GEDP w wybranym cyklu. Możesz cofnąć dokument do wcześniejszego statusu - powód trafi do historii dokumentu, którą widzą pracownik i przełożony, oraz do dziennika audytu.",
+      "readOnly": "Ten cykl nie jest otwarty: statusy są tylko do podglądu.",
+      "noCycle": "Nie ma jeszcze żadnego cyklu.",
+      "filtersTitle": "Wyszukiwanie i filtry",
+      "search": "Szukaj",
+      "searchHint": "Imię, nazwisko lub AMEI pracownika",
+      "status": "Status",
+      "anyStatus": "Wszystkie statusy",
+      "apply": "Pokaż wyniki",
+      "clear": "Wyczyść filtry",
+      "results": "Znaleziono: {count}",
+      "shownOf": "Pokazano {shown} z {total}. Zawęź wyszukiwanie, aby zobaczyć pozostałe.",
+      "empty": "Brak dokumentów spełniających kryteria.",
+      "tableCaption": "Dokumenty w cyklu {year}",
+      "employee": "Pracownik",
+      "validators": "Walidują",
+      "managerLabel": "N+1:",
+      "lastChange": "Ostatnia zmiana",
+      "actions": "Akcje",
+      "revertFor": "Cofnij status dokumentu: {name}",
+      "noEarlier": "Brak wcześniejszego statusu",
+      "revert": {
+        "title": "Cofnięcie statusu dokumentu",
+        "current": "Obecny status",
+        "target": "Cofnij do",
+        "reasonHint": "Pracownik i przełożony zobaczą powód w historii dokumentu. Zmiana trafi do dziennika audytu.",
+        "submit": "Cofnij status",
+        "saving": "Zapisywanie…",
+        "done": "Cofnięto status: {name} ({from} → {to}).",
+        "count": "{count} / {max}"
+      }
     }
   },
   "reports": {

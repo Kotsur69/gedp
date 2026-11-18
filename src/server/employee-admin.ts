@@ -12,9 +12,10 @@ import {
 } from "@/domain/employee-edit";
 import { writeAudit } from "@/server/audit";
 import { HIERARCHY_TX_OPTIONS, HierarchyCycleError, lockHierarchy, rebuildHierarchy } from "@/server/hierarchy";
-import { ForbiddenError, type Viewer } from "@/server/permissions";
+import { requireActiveHrAdmin, type Viewer } from "@/server/permissions";
 
-// HR panel, employees (HR-04): the searchable list and the manual edit of one person.
+// HR panel, employees (HR-04): the searchable list and the manual edit of one person, including the
+// WF-09 override validator (employee.validatorOverrideId; who validates people without a manager).
 //
 // - HR only, checked against the live row (a demoted or deactivated HR user is refused at once).
 // - The edit runs in ONE READ COMMITTED transaction (HIERARCHY_TX_OPTIONS): lock the hierarchy and
@@ -34,17 +35,6 @@ const MAX_FILTER_LENGTH = 200;
 const MAX_PAGE = 100_000;
 
 export type EmployeeAdminDb = Pick<PrismaClient, "employee" | "$transaction">;
-type HrReader = Pick<Prisma.TransactionClient, "employee">;
-
-/** Re-checks the viewer against the database: only an active HR admin may use this screen. */
-async function requireActiveHr(db: HrReader, viewer: Viewer): Promise<void> {
-  if (!viewer.isHrAdmin) throw new ForbiddenError("edit", "Only HR may manage employees");
-  const current = await db.employee.findFirst({
-    where: { id: viewer.id, isActive: true, isHrAdmin: true },
-    select: { id: true },
-  });
-  if (!current) throw new ForbiddenError("edit", "Only active HR may manage employees");
-}
 
 // ---------------------------------------------------------------------------
 // List filters (URL search params - untrusted; an invalid value falls back to "no filter")
@@ -116,6 +106,7 @@ const listSelect = {
   isHrAdmin: true,
   updatedAt: true,
   manager: { select: { amei: true, firstName: true, lastName: true } },
+  validatorOverride: { select: { amei: true, firstName: true, lastName: true } },
 } satisfies Prisma.EmployeeSelect;
 
 export interface EmployeeListItem extends EditableEmployee {
@@ -126,6 +117,8 @@ export interface EmployeeListItem extends EditableEmployee {
   lastName: string;
   isWhiteCollar: boolean;
   managerName: string | null;
+  /** WF-09 override validator, shown next to the manager. */
+  validatorOverrideName: string | null;
   /** updatedAt as ISO; sent back with an edit to detect a concurrent change. */
   version: string;
 }
@@ -140,11 +133,13 @@ export interface EmployeeListPage {
 type ListRow = Prisma.EmployeeGetPayload<{ select: typeof listSelect }>;
 
 function toListItem(row: ListRow): EmployeeListItem {
-  const { manager, updatedAt, ...rest } = row;
+  const { manager, validatorOverride, updatedAt, ...rest } = row;
   return {
     ...rest,
     managerAmei: manager?.amei ?? null,
     managerName: manager ? `${manager.firstName} ${manager.lastName}` : null,
+    validatorOverrideAmei: validatorOverride?.amei ?? null,
+    validatorOverrideName: validatorOverride ? `${validatorOverride.firstName} ${validatorOverride.lastName}` : null,
     version: updatedAt.toISOString(),
   };
 }
@@ -154,7 +149,7 @@ export async function listEmployees(
   viewer: Viewer,
   filters: EmployeeListFilters,
 ): Promise<EmployeeListPage> {
-  await requireActiveHr(db, viewer);
+  await requireActiveHrAdmin(db, viewer);
   const where = employeeListWhere(filters);
   const total = await db.employee.count({ where });
   const pageCount = Math.max(1, Math.ceil(total / EMPLOYEE_PAGE_SIZE));
@@ -182,7 +177,7 @@ export interface EmployeeFilterOptions {
 }
 
 export async function loadEmployeeFilterOptions(db: EmployeeAdminDb, viewer: Viewer): Promise<EmployeeFilterOptions> {
-  await requireActiveHr(db, viewer);
+  await requireActiveHrAdmin(db, viewer);
   const [departments, managers] = await Promise.all([
     db.employee.findMany({
       where: { department: { not: null } },
@@ -230,12 +225,15 @@ const editSelect = {
   isHrAdmin: true,
   updatedAt: true,
   manager: { select: { amei: true } },
+  validatorOverrideId: true,
+  validatorOverride: { select: { amei: true } },
 } satisfies Prisma.EmployeeSelect;
 
 type EditRow = Prisma.EmployeeGetPayload<{ select: typeof editSelect }>;
 
 const editable = (row: EditRow): EditableEmployee => ({
   managerAmei: row.manager?.amei ?? null,
+  validatorOverrideAmei: row.validatorOverride?.amei ?? null,
   department: row.department,
   position: row.position,
   location: row.location,
@@ -246,19 +244,52 @@ const editable = (row: EditRow): EditableEmployee => ({
 const auditValues = (changes: readonly EmployeeFieldChange[], side: "before" | "after") =>
   Object.fromEntries(changes.map((change) => [change.field, change[side]]));
 
-/** Resolves the new manager AMEI to an id; unchanged when the AMEI is the current manager's. */
-async function resolveManagerId(
-  tx: Prisma.TransactionClient,
-  row: EditRow,
-  managerAmei: string | null,
-): Promise<number | null> {
-  if (managerAmei === null) return null;
-  if (managerAmei === row.manager?.amei) return row.managerId;
-  const manager = await tx.employee.findUnique({ where: { amei: managerAmei }, select: { id: true } });
-  if (!manager) throw new EmployeeAdminError("UNKNOWN_MANAGER", { managerAmei: "UNKNOWN_MANAGER" });
-  if (manager.id === row.id) throw new EmployeeAdminError("SELF_MANAGER", { managerAmei: "SELF_MANAGER" });
-  return manager.id;
+/** A form field that names another person by AMEI, with its own error codes. */
+interface PersonReference {
+  field: "managerAmei" | "validatorOverrideAmei";
+  unknown: EmployeeEditErrorCode;
+  self: EmployeeEditErrorCode;
+  /** Set when the person must be able to sign in (an override validator who cannot would block the document). */
+  cannotSignIn?: EmployeeEditErrorCode;
 }
+
+const MANAGER_REFERENCE: PersonReference = { field: "managerAmei", unknown: "UNKNOWN_MANAGER", self: "SELF_MANAGER" };
+const OVERRIDE_REFERENCE: PersonReference = {
+  field: "validatorOverrideAmei",
+  unknown: "UNKNOWN_VALIDATOR",
+  self: "SELF_VALIDATOR",
+  cannotSignIn: "INACTIVE_VALIDATOR",
+};
+
+const fail = (reference: PersonReference, code: EmployeeEditErrorCode): never => {
+  throw new EmployeeAdminError(code, { [reference.field]: code });
+};
+
+/**
+ * Resolves an AMEI from the form to an employee id. Unchanged when the AMEI is the current one, so
+ * keeping an existing value never fails on rules added later.
+ */
+async function resolvePersonId(
+  tx: Prisma.TransactionClient,
+  employeeId: number,
+  amei: string | null,
+  current: { id: number | null; amei: string | null },
+  reference: PersonReference,
+): Promise<number | null> {
+  if (amei === null) return null;
+  if (amei === current.amei) return current.id;
+  const person = await tx.employee.findUnique({
+    where: { amei },
+    select: { id: true, isActive: true, isWhiteCollar: true },
+  });
+  if (!person) return fail(reference, reference.unknown);
+  if (person.id === employeeId) return fail(reference, reference.self);
+  if (reference.cannotSignIn && !(person.isActive && person.isWhiteCollar)) return fail(reference, reference.cannotSignIn);
+  return person.id;
+}
+
+/** Fields stored as foreign keys, not as columns of the same name. */
+const PERSON_FIELDS: ReadonlySet<string> = new Set([MANAGER_REFERENCE.field, OVERRIDE_REFERENCE.field]);
 
 /** Locks the person's row and reads it. Call after lockHierarchy. */
 async function lockAndLoad(tx: Prisma.TransactionClient, employeeId: number): Promise<EditRow> {
@@ -291,19 +322,34 @@ export async function updateEmployee(
       // Lock first, THEN re-check HR: every structure change (this edit, the import) takes the same
       // lock, so two HR admins demoting each other are serialised and the second one is refused.
       await lockHierarchy(tx);
-      await requireActiveHr(tx, viewer);
+      await requireActiveHrAdmin(tx, viewer);
       const row = await lockAndLoad(tx, employeeId);
       if (row.updatedAt.toISOString() !== version) throw new EmployeeAdminError("STALE");
 
       const changes = employeeChanges(editable(row), after);
       if (changes.length === 0) return { changes };
 
-      const managerId = await resolveManagerId(tx, row, after.managerAmei);
+      const currentManager = { id: row.managerId, amei: row.manager?.amei ?? null };
+      const currentOverride = { id: row.validatorOverrideId, amei: row.validatorOverride?.amei ?? null };
+      const managerId = await resolvePersonId(tx, row.id, after.managerAmei, currentManager, MANAGER_REFERENCE);
+      const validatorOverrideId = await resolvePersonId(
+        tx,
+        row.id,
+        after.validatorOverrideAmei,
+        currentOverride,
+        OVERRIDE_REFERENCE,
+      );
       const managerMoved = managerId !== row.managerId;
-      const columns = changes.filter((c) => c.field !== "managerAmei").map((c) => [c.field, c.after]);
+      const overrideMoved = validatorOverrideId !== row.validatorOverrideId;
+      const columns = changes.filter((c) => !PERSON_FIELDS.has(c.field)).map((c) => [c.field, c.after]);
       await tx.employee.update({
         where: { id: employeeId },
-        data: { ...Object.fromEntries(columns), ...(managerMoved ? { managerId } : {}) },
+        data: {
+          ...Object.fromEntries(columns),
+          ...(managerMoved ? { managerId } : {}),
+          // WF-09: no hierarchy rebuild - the override is read live by the permission module.
+          ...(overrideMoved ? { validatorOverrideId } : {}),
+        },
       });
       // Same transaction: a loop throws HierarchyCycleError here and nothing above is committed.
       if (managerMoved) await rebuildHierarchy(tx);

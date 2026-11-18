@@ -5,9 +5,11 @@ import type { CycleStatus, DocumentStatus } from "@/generated/prisma/enums";
 import {
   availableActions,
   canValidatorEditGoals,
+  DOCUMENT_STATUSES,
   findTransition,
   isCommentRequired,
   isDocumentStatus,
+  isRevertAllowed,
   WORKFLOW_ACTIONS,
   workflowCommentSchema,
   type Transition,
@@ -18,13 +20,14 @@ import { writeAudit } from "@/server/audit";
 import {
   ForbiddenError,
   NotFoundError,
+  requireActiveHrAdmin,
   requireDocumentPermission,
   validatableDocumentsWhere,
   type DocumentAccess,
   type Viewer,
 } from "@/server/permissions";
 
-// Document workflow on the server (WF-01..06). The rules - which transitions exist,
+// Document workflow on the server (WF-01..06, WF-08 HR revert). The rules - which transitions exist,
 // who makes them, what needs a comment - live in src/domain/document-status.ts, the closing
 // conditions in src/domain/closing-conditions.ts; this module enforces them.
 //
@@ -51,7 +54,9 @@ export type WorkflowErrorCode =
   | "CYCLE_NOT_OPEN"
   | "CONDITIONS_NOT_MET"
   | "NOT_EDITABLE"
-  | "GOAL_NOT_IN_PLAN";
+  | "GOAL_NOT_IN_PLAN"
+  | "REASON_REQUIRED"
+  | "STATUS_CHANGED";
 
 const HTTP_BAD_REQUEST = 400;
 const HTTP_CONFLICT = 409;
@@ -59,6 +64,7 @@ const INPUT_ERROR_CODES: ReadonlySet<WorkflowErrorCode> = new Set<WorkflowErrorC
   "INVALID_INPUT",
   "COMMENT_REQUIRED",
   "COMMENT_TOO_LONG",
+  "REASON_REQUIRED",
 ]);
 
 export class WorkflowError extends Error {
@@ -218,6 +224,65 @@ export async function transitionDocument(db: WorkflowWriter, viewer: Viewer, inp
       after: { status: transition.to, comment, historyId: entry.id },
     });
     return { documentId, from: transition.from, to: transition.to, historyId: entry.id, changedAt: entry.createdAt };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// HR status revert (WF-08)
+// ---------------------------------------------------------------------------
+
+export const AUDIT_ACTION_REVERT = "STATUS_REVERT";
+
+/** `from` is the status HR saw: a document that moved since is refused (STATUS_CHANGED), not reverted blind. */
+export const revertInputSchema = z
+  .object({
+    documentId: dbIdSchema,
+    from: z.enum(DOCUMENT_STATUSES),
+    to: z.enum(DOCUMENT_STATUSES),
+    reason: workflowCommentSchema,
+  })
+  .strict();
+
+/**
+ * "Cofnij status" (WF-08): HR moves a document back to an earlier status with a required reason.
+ * HR only, re-checked against the live row inside the transaction. Same transaction shape as
+ * transitionDocument: lock -> HR -> visibility -> status still `from` -> cycle open -> update that
+ * re-asserts `from` -> history row (reason as its comment) -> audit row. Goals are not touched, and
+ * validatorId keeps recording who last validated.
+ * [ZAŁ] Only in an open cycle, like every other status change (a closed year stays as it was).
+ */
+export async function revertDocumentStatus(db: WorkflowWriter, viewer: Viewer, input: unknown): Promise<TransitionResult> {
+  // Refused before reading the payload or the database: the session already says this is not HR.
+  if (!viewer.isHrAdmin) throw new ForbiddenError("edit", "status revert: HR only");
+  const { documentId, from, to, reason } = parseWorkflowInput(revertInputSchema, input);
+  if (reason === null) throw new WorkflowError("REASON_REQUIRED");
+  if (!isRevertAllowed(from, to)) throw new WorkflowError("ILLEGAL_TRANSITION");
+
+  return db.$transaction(async (tx) => {
+    const locked = await lockDocument(tx, documentId);
+    await requireActiveHrAdmin(tx, viewer);
+    await requireDocumentPermission(tx, viewer, documentId, "view");
+    if (!locked || !isDocumentStatus(locked.documentStatus)) throw new NotFoundError(`document ${documentId}`);
+    if (locked.documentStatus !== from) throw new WorkflowError("STATUS_CHANGED");
+    if (locked.cycleStatus !== "OTWARTY") throw new WorkflowError("CYCLE_NOT_OPEN");
+
+    const updated = await tx.gedpDocument.updateMany({ where: { id: documentId, status: from }, data: { status: to } });
+    // Cannot happen under the row lock; kept so a lost update can never pass silently.
+    if (updated.count !== 1) throw new WorkflowError("STATUS_CHANGED");
+
+    const entry = await tx.documentStatusHistory.create({
+      data: { documentId, fromStatus: from, toStatus: to, authorId: viewer.id, comment: reason },
+      select: { id: true, createdAt: true },
+    });
+    await writeAudit(tx, {
+      actorId: viewer.id,
+      entity: "gedp_document",
+      entityId: documentId,
+      action: AUDIT_ACTION_REVERT,
+      before: { status: from },
+      after: { status: to, reason, historyId: entry.id },
+    });
+    return { documentId, from, to, historyId: entry.id, changedAt: entry.createdAt };
   });
 }
 

@@ -12,7 +12,7 @@ import {
   type EmployeeAdminDb,
 } from "./employee-admin";
 import { HIERARCHY_TX_OPTIONS, isDirectReport, isInSubtree, rebuildHierarchy } from "./hierarchy";
-import { ForbiddenError } from "./permissions";
+import { ForbiddenError, permissionsForEmployee } from "./permissions";
 
 const HR = { id: 1, isHrAdmin: true };
 
@@ -60,6 +60,7 @@ describe("[HR-04] access and input - no database", () => {
     employeeId: 5,
     version: "2026-11-17T10:00:00.000Z",
     managerAmei: "",
+    validatorOverrideAmei: "",
     department: "",
     position: "",
     location: "",
@@ -95,6 +96,153 @@ describe("[HR-04] access and input - no database", () => {
   });
 });
 
+describe("[WF-09] override validator - HR sets who validates (fake transaction, no database)", () => {
+  interface FakePerson {
+    id: number;
+    amei: string;
+    managerId: number | null;
+    validatorOverrideId: number | null;
+    isActive: boolean;
+    isWhiteCollar: boolean;
+    isHrAdmin: boolean;
+  }
+  const VERSION = "2026-11-17T10:00:00.000Z";
+  const fakePerson = (id: number, amei: string, extra: Partial<FakePerson> = {}): FakePerson => ({
+    id,
+    amei,
+    managerId: null,
+    validatorOverrideId: null,
+    isActive: true,
+    isWhiteCollar: true,
+    isHrAdmin: false,
+    ...extra,
+  });
+  // HR (1, HR admin) ; TOP (2, no manager) ; OV (3) ; GONE (4, inactive) ; BLUE (5, not White Collar)
+  const people = () => [
+    fakePerson(1, "TSTHR", { isHrAdmin: true }),
+    fakePerson(2, "TSTTOP"),
+    fakePerson(3, "TSTOV"),
+    fakePerson(4, "TSTGONE", { isActive: false }),
+    fakePerson(5, "TSTBLUE", { isWhiteCollar: false }),
+  ];
+
+  /** Implements only the calls updateEmployee makes when the manager does not move. */
+  function fakeDb(initial: FakePerson[]) {
+    const state = { people: structuredClone(initial), updates: [] as unknown[], audit: [] as Record<string, unknown>[] };
+    const byId = (id: number | null) => state.people.find((p) => p.id === id);
+    const ameiOf = (id: number | null) => (id === null ? null : { amei: byId(id)!.amei });
+    const tx = {
+      $executeRaw: async () => 0,
+      $queryRaw: async () => [],
+      employee: {
+        findFirst: async ({ where }: { where: { id: number; isActive: true; isHrAdmin: true } }) => {
+          const p = byId(where.id);
+          return p?.isActive && p.isHrAdmin ? { id: p.id } : null;
+        },
+        findUnique: async ({ where }: { where: { id?: number; amei?: string } }) => {
+          if (where.amei !== undefined) {
+            const p = state.people.find((x) => x.amei === where.amei);
+            return p ? { id: p.id, isActive: p.isActive, isWhiteCollar: p.isWhiteCollar } : null;
+          }
+          const p = byId(where.id ?? null);
+          if (!p) return null;
+          return {
+            ...p,
+            department: null,
+            position: null,
+            location: null,
+            updatedAt: new Date(VERSION),
+            manager: ameiOf(p.managerId),
+            validatorOverride: ameiOf(p.validatorOverrideId),
+          };
+        },
+        update: async ({ where, data }: { where: { id: number }; data: Partial<FakePerson> }) => {
+          state.updates.push({ id: where.id, data });
+          Object.assign(byId(where.id)!, data);
+          return {};
+        },
+      },
+      auditLog: {
+        create: async ({ data }: { data: Record<string, unknown> }) => {
+          state.audit.push(data);
+          return data;
+        },
+      },
+    };
+    const db = { ...tx, $transaction: async <T,>(fn: (client: typeof tx) => Promise<T>) => fn(tx) };
+    return { db: db as unknown as EmployeeAdminDb, state };
+  }
+
+  const form = (employeeId: number, validatorOverrideAmei: string): EmployeeEditPayload => ({
+    employeeId,
+    version: VERSION,
+    managerAmei: "",
+    validatorOverrideAmei,
+    department: "",
+    position: "",
+    location: "",
+    isActive: true,
+    isHrAdmin: false,
+  });
+
+  it("sets the override of a person without a manager, audited, without touching the manager", async () => {
+    const { db, state } = fakeDb(people());
+    const result = await updateEmployee(db, HR, form(2, " tstov "));
+
+    expect(result.changes).toEqual([{ field: "validatorOverrideAmei", before: null, after: "TSTOV" }]);
+    expect(state.updates).toEqual([{ id: 2, data: { validatorOverrideId: 3 } }]);
+    expect(state.audit).toEqual([
+      expect.objectContaining({
+        actorId: HR.id,
+        entity: "employee",
+        entityId: "2",
+        action: AUDIT_ACTION_UPDATE,
+        before: { validatorOverrideAmei: null },
+        after: { validatorOverrideAmei: "TSTOV" },
+      }),
+    ]);
+  });
+
+  it("clears an override with an empty field; an unchanged override writes nothing", async () => {
+    const initial = people().map((p) => (p.id === 2 ? { ...p, validatorOverrideId: 3 } : p));
+    const unchanged = fakeDb(initial);
+    expect((await updateEmployee(unchanged.db, HR, form(2, "TSTOV"))).changes).toEqual([]);
+    expect(unchanged.state.audit).toEqual([]);
+
+    const { db, state } = fakeDb(initial);
+    await updateEmployee(db, HR, form(2, ""));
+    expect(state.updates).toEqual([{ id: 2, data: { validatorOverrideId: null } }]);
+    expect(state.audit).toEqual([expect.objectContaining({ after: { validatorOverrideAmei: null } })]);
+  });
+
+  it("refuses the person themselves, an unknown AMEI and someone who cannot sign in", async () => {
+    const cases = [
+      ["TSTTOP", "SELF_VALIDATOR"],
+      ["ZZZ999", "UNKNOWN_VALIDATOR"],
+      ["TSTGONE", "INACTIVE_VALIDATOR"],
+      ["TSTBLUE", "INACTIVE_VALIDATOR"],
+    ] as const;
+    for (const [amei, code] of cases) {
+      const { db, state } = fakeDb(people());
+      await expect(updateEmployee(db, HR, form(2, amei)), amei).rejects.toMatchObject({
+        code,
+        fieldErrors: { validatorOverrideAmei: code },
+      });
+      expect(state.updates).toEqual([]);
+      expect(state.audit).toEqual([]);
+    }
+  });
+
+  it("non-HR is refused, and so is an HR session whose live row lost HR rights", async () => {
+    const { db, state } = fakeDb(people());
+    await expect(updateEmployee(db, { id: 3, isHrAdmin: false }, form(2, "TSTOV"))).rejects.toThrow(ForbiddenError);
+
+    const demoted = fakeDb(people().map((p) => (p.id === 1 ? { ...p, isHrAdmin: false } : p)));
+    await expect(updateEmployee(demoted.db, HR, form(2, "TSTOV"))).rejects.toThrow(ForbiddenError);
+    expect([...state.updates, ...demoted.state.updates]).toEqual([]);
+  });
+});
+
 describe.skipIf(!hasTestDb)("[HR-04] employee edit - database", () => {
   const db = hasTestDb ? createTestDb() : null!;
   let ids: Map<string, number>;
@@ -123,12 +271,13 @@ describe.skipIf(!hasTestDb)("[HR-04] employee edit - database", () => {
   async function formFor(amei: string): Promise<EmployeeEditPayload> {
     const row = await db.employee.findUniqueOrThrow({
       where: { id: id(amei) },
-      include: { manager: { select: { amei: true } } },
+      include: { manager: { select: { amei: true } }, validatorOverride: { select: { amei: true } } },
     });
     return {
       employeeId: row.id,
       version: row.updatedAt.toISOString(),
       managerAmei: row.manager?.amei ?? "",
+      validatorOverrideAmei: row.validatorOverride?.amei ?? "",
       department: row.department ?? "",
       position: row.position ?? "",
       location: row.location ?? "",
@@ -215,6 +364,19 @@ describe.skipIf(!hasTestDb)("[HR-04] employee edit - database", () => {
   it("refuses an HR viewer whose live row is no longer HR", async () => {
     await db.employee.update({ where: { id: hr.id }, data: { isHrAdmin: false } });
     await expect(updateEmployee(db, hr, await formFor("TSTB"))).rejects.toThrow(ForbiddenError);
+  });
+
+  it("[WF-09] an override set by HR lets that person validate someone at the top of the structure", async () => {
+    const validator = { id: id("TSTB"), isHrAdmin: false };
+    expect((await permissionsForEmployee(db, validator, id("TSTTOP"))).validate).toBe(false);
+
+    await updateEmployee(db, hr, { ...(await formFor("TSTTOP")), validatorOverrideAmei: "tstb" });
+
+    expect((await permissionsForEmployee(db, validator, id("TSTTOP"))).validate).toBe(true);
+    const [audit] = await auditRows();
+    expect(audit).toMatchObject({ before: { validatorOverrideAmei: null }, after: { validatorOverrideAmei: "TSTB" } });
+    const listed = await listEmployees(db, hr, parseEmployeeListFilters({ q: "tsttop" }));
+    expect(listed.items[0]).toMatchObject({ validatorOverrideAmei: "TSTB", validatorOverrideName: "Test TSTB" });
   });
 
   it("lists, searches and filters with the manager shown", async () => {

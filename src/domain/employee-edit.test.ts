@@ -11,6 +11,7 @@ const payload = (overrides: Partial<EmployeeEditPayload> = {}): EmployeeEditPayl
   employeeId: 7,
   version: "2026-11-17T10:00:00.000Z",
   managerAmei: " ab12345 ",
+  validatorOverrideAmei: "",
   department: "  Sprzedaż ",
   position: "",
   location: "Oddział A",
@@ -49,6 +50,19 @@ describe("[HR-04] employeeEditSchema", () => {
     expect(employeeEditSchema.safeParse(payload({ version: "yesterday" })).success).toBe(false);
   });
 
+  it("[WF-09] the override validator follows the AMEI rules; empty means no override", () => {
+    expect(employeeEditSchema.parse(payload({ validatorOverrideAmei: " ov123 " })).validatorOverrideAmei).toBe("OV123");
+    expect(employeeEditSchema.parse(payload({ validatorOverrideAmei: "  " })).validatorOverrideAmei).toBeNull();
+    const result = employeeEditSchema.safeParse(payload({ validatorOverrideAmei: "o-v" }));
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(employeeEditFieldErrors(result.error)).toEqual({ validatorOverrideAmei: "INVALID_AMEI" });
+    // Required key: a form that forgets it must not silently clear an existing override.
+    const withoutOverride: Record<string, unknown> = { ...payload() };
+    delete withoutOverride.validatorOverrideAmei;
+    expect(employeeEditSchema.safeParse(withoutOverride).success).toBe(false);
+  });
+
   it("rejects invisible bidi characters", () => {
     expect(employeeEditSchema.safeParse(payload({ position: "Kier‮ownik" })).success).toBe(false);
   });
@@ -57,6 +71,7 @@ describe("[HR-04] employeeEditSchema", () => {
 describe("[HR-04] employeeChanges", () => {
   const base: EditableEmployee = {
     managerAmei: "AB1",
+    validatorOverrideAmei: null,
     department: "IT",
     position: null,
     location: null,
@@ -69,8 +84,9 @@ describe("[HR-04] employeeChanges", () => {
   });
 
   it("lists changed fields in form order with before and after", () => {
-    expect(employeeChanges(base, { ...base, isHrAdmin: true, managerAmei: null })).toEqual([
+    expect(employeeChanges(base, { ...base, isHrAdmin: true, managerAmei: null, validatorOverrideAmei: "OV1" })).toEqual([
       { field: "managerAmei", before: "AB1", after: null },
+      { field: "validatorOverrideAmei", before: null, after: "OV1" },
       { field: "isHrAdmin", before: false, after: true },
     ]);
   });

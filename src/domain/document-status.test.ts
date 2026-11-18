@@ -8,6 +8,8 @@ import {
   goalEditScope,
   isCommentRequired,
   isDocumentStatus,
+  isRevertAllowed,
+  revertTargets,
   TRANSITIONS,
   WORKFLOW_ACTIONS,
   workflowCommentSchema,
@@ -59,6 +61,24 @@ describe("transition table (WF-01, WF-03)", () => {
   it("narrows database text to a status", () => {
     expect(isDocumentStatus("ZATWIERDZONY")).toBe(true);
     expect(isDocumentStatus("APPROVED")).toBe(false);
+  });
+});
+
+describe("[WF-08] HR status revert targets", () => {
+  it("only ever goes back, nearest status first; a draft has nowhere to go", () => {
+    expect(revertTargets("SZKIC")).toEqual([]);
+    expect(revertTargets("ZWROCONY")).toEqual(["SZKIC"]);
+    expect(revertTargets("DO_WALIDACJI")).toEqual(["ZWROCONY", "SZKIC"]);
+    expect(revertTargets("ZATWIERDZONY")).toEqual(["DO_WALIDACJI", "ZWROCONY", "SZKIC"]);
+  });
+
+  it("refuses every forward or same-status move", () => {
+    const order = ["SZKIC", "ZWROCONY", "DO_WALIDACJI", "ZATWIERDZONY"] as const;
+    for (const [fromIndex, from] of order.entries()) {
+      for (const [toIndex, to] of order.entries()) {
+        expect(isRevertAllowed(from, to), `${from} -> ${to}`).toBe(toIndex < fromIndex);
+      }
+    }
   });
 });
 

@@ -66,6 +66,31 @@ export function availableActions(status: DocumentStatusValue, roles: WorkflowRol
 }
 
 // ---------------------------------------------------------------------------
+// HR status revert (WF-08)
+// ---------------------------------------------------------------------------
+
+/**
+ * WF-08: HR may move a document back to any EARLIER status, with a reason. "Earlier" follows the
+ * road a document travels: SZKIC -> ZWROCONY (sent and sent back) -> DO_WALIDACJI -> ZATWIERDZONY.
+ * Never forward: HR does not send or approve someone's plan through a revert (Q-05).
+ */
+export const REVERT_TARGETS: Readonly<Record<DocumentStatusValue, readonly DocumentStatusValue[]>> = Object.freeze({
+  SZKIC: [],
+  ZWROCONY: ["SZKIC"],
+  DO_WALIDACJI: ["ZWROCONY", "SZKIC"],
+  ZATWIERDZONY: ["DO_WALIDACJI", "ZWROCONY", "SZKIC"],
+});
+
+/** Statuses HR may revert a document in `from` to, nearest first. */
+export function revertTargets(from: DocumentStatusValue): readonly DocumentStatusValue[] {
+  return REVERT_TARGETS[from];
+}
+
+export function isRevertAllowed(from: DocumentStatusValue, to: DocumentStatusValue): boolean {
+  return REVERT_TARGETS[from].includes(to);
+}
+
+// ---------------------------------------------------------------------------
 // Edit locks (WF-02, WF-05)
 // ---------------------------------------------------------------------------
 

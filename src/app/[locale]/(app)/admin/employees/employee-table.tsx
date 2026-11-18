@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckIcon, PencilIcon } from "@/components/shell/icons";
+import { CheckIcon, InfoIcon, PencilIcon } from "@/components/shell/icons";
 import type { EmployeeListItem } from "@/server/employee-admin";
 import { EmployeeEditDialog, type SaveOutcome } from "./employee-edit-dialog";
 
@@ -121,8 +121,9 @@ function EmployeeRow({ item, onEdit }: EmployeeRowProps) {
             <span className="block text-ink-soft tabular-nums">{item.managerAmei}</span>
           </>
         ) : (
-          <span className="text-ink-soft">{t("employees.topOfStructure")}</span>
+          <span className="block text-ink-soft">{t("employees.topOfStructure")}</span>
         )}
+        <ValidatorOverride item={item} />
       </td>
       <td className={CELL}>
         <YesNo value={item.isActive} />
@@ -145,6 +146,30 @@ function EmployeeRow({ item, onEdit }: EmployeeRowProps) {
         </button>
       </td>
     </tr>
+  );
+}
+
+/**
+ * WF-09 override validator under the manager. Someone with neither a manager nor an override has
+ * nobody to validate their document: say so in text (the notice tone only reinforces it).
+ */
+function ValidatorOverride({ item }: { item: EmployeeListItem }) {
+  const t = useTranslations("admin");
+  if (item.validatorOverrideAmei) {
+    return (
+      <span className="mt-1.5 block border-l-2 border-accent/50 pl-2">
+        <span className="block text-xs font-semibold tracking-[0.04em] text-accent">{t("employees.overrideLabel")}</span>
+        <span className="block">{item.validatorOverrideName}</span>
+        <span className="block text-ink-soft tabular-nums">{item.validatorOverrideAmei}</span>
+      </span>
+    );
+  }
+  if (item.managerAmei || !item.isActive) return null;
+  return (
+    <span className="mt-1.5 inline-flex items-start gap-1 rounded-lg bg-notice-surface px-2 py-1 text-xs font-semibold text-notice">
+      <InfoIcon className="mt-px size-3.5 shrink-0" />
+      {t("employees.noValidator")}
+    </span>
   );
 }
 

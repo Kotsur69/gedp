@@ -15,7 +15,7 @@ import { MAX_TEXT_LENGTH } from "@/server/import/structure-columns";
 import { updateEmployeeAction, type EmployeeEditActionErrorCode } from "./actions";
 import { DEPARTMENT_OPTIONS_ID, MANAGER_OPTIONS_ID } from "./option-lists";
 
-// HR-04 edit window: manager, department, position, location, active, HR admin. Identity fields are
+// HR-04 edit window: manager, WF-09 override validator, department, position, location, active, HR admin. Identity fields are
 // shown read-only (the structure import owns them). The form runs the shared zod schema for quick
 // feedback; the server validates again, rejects a manager loop and audits the change.
 
@@ -70,6 +70,7 @@ type FormValues = Omit<EmployeeEditPayload, "employeeId" | "version">;
 
 const toFormValues = (employee: EmployeeListItem): FormValues => ({
   managerAmei: employee.managerAmei ?? "",
+  validatorOverrideAmei: employee.validatorOverrideAmei ?? "",
   department: employee.department ?? "",
   position: employee.position ?? "",
   location: employee.location ?? "",
@@ -175,6 +176,17 @@ function EditForm({ employee, pendingRef, requestClose, onSaved }: EditFormProps
           hint={t("employees.edit.managerHint")}
           value={values.managerAmei}
           onChange={(value) => set("managerAmei", value)}
+          list={MANAGER_OPTIONS_ID}
+          maxLength={MAX_AMEI_LENGTH}
+          isReadOnly={isPending}
+          className="sm:col-span-2 [&_input]:uppercase"
+        />
+        <TextField
+          {...fieldProps("validatorOverrideAmei")}
+          label={t("employeeFields.validatorOverride")}
+          hint={t("employees.edit.validatorOverrideHint")}
+          value={values.validatorOverrideAmei}
+          onChange={(value) => set("validatorOverrideAmei", value)}
           list={MANAGER_OPTIONS_ID}
           maxLength={MAX_AMEI_LENGTH}
           isReadOnly={isPending}

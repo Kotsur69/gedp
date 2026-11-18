@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { AMEI_PATTERN, MAX_TEXT_LENGTH } from "@/server/import/structure-columns";
 
-// HR-04: manual edit of one employee in the HR panel (manager, department, position, location,
-// active, HR admin). ONE schema for the form and the server, client-safe (zod only); issue
+// HR-04: manual edit of one employee in the HR panel (manager, WF-09 override validator, department,
+// position, location, active, HR admin). ONE schema for the form and the server, client-safe (zod only); issue
 // messages are error codes the UI translates. Identity fields (AMEI, e-mail, names, White Collar)
 // stay owned by the structure import (HR-01) and are not editable here.
 //
@@ -11,6 +11,7 @@ import { AMEI_PATTERN, MAX_TEXT_LENGTH } from "@/server/import/structure-columns
 
 export const EMPLOYEE_EDIT_FIELDS = [
   "managerAmei",
+  "validatorOverrideAmei",
   "department",
   "position",
   "location",
@@ -26,6 +27,9 @@ export const EMPLOYEE_EDIT_ERROR_CODES = [
   "INVALID_TEXT",
   "SELF_MANAGER",
   "UNKNOWN_MANAGER",
+  "SELF_VALIDATOR",
+  "UNKNOWN_VALIDATOR",
+  "INACTIVE_VALIDATOR",
   "HIERARCHY_CYCLE",
   "SELF_LOCKOUT",
   "STALE",
@@ -50,8 +54,11 @@ const optionalText = z
   .refine((value) => !HIDDEN_CHARACTERS.test(value), "INVALID_TEXT")
   .transform((value) => (value === "" ? null : value));
 
-/** Manager AMEI: upper-cased like the import; empty = top of the structure. */
-const managerAmei = z
+/**
+ * AMEI of another person, upper-cased like the import; empty = nobody. Used for the manager (empty =
+ * top of the structure) and for the WF-09 override validator (empty = no override).
+ */
+const personAmei = z
   .string("INVALID_INPUT")
   .trim()
   .toUpperCase()
@@ -62,7 +69,10 @@ export const employeeEditSchema = z
   .object({
     employeeId: z.number("INVALID_INPUT").int("INVALID_INPUT").min(1, "INVALID_INPUT").max(MAX_INT4, "INVALID_INPUT"),
     version: z.iso.datetime({ message: "INVALID_INPUT" }),
-    managerAmei,
+    managerAmei: personAmei,
+    // WF-09: validates this person's documents IN ADDITION to the manager (permissions.ts). Who it
+    // should be for the top of the structure is open (Q-05); HR decides case by case.
+    validatorOverrideAmei: personAmei,
     department: optionalText,
     position: optionalText,
     location: optionalText,
@@ -89,6 +99,7 @@ export function employeeEditFieldErrors(error: z.ZodError): EmployeeEditFieldErr
 /** The editable values of a person, as compared, audited and shown in the form. */
 export interface EditableEmployee {
   managerAmei: string | null;
+  validatorOverrideAmei: string | null;
   department: string | null;
   position: string | null;
   location: string | null;
