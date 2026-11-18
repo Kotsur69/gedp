@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ChevronLeftIcon } from "@/components/shell/icons";
+import { ChevronLeftIcon, EyeIcon, PencilIcon } from "@/components/shell/icons";
 import { DocumentStatusPanel } from "@/components/workflow/document-status-panel";
 import type { Locale } from "@/i18n/config";
 import { requireEmployee } from "@/server/current-employee";
@@ -14,12 +14,13 @@ import { requireTab } from "@/server/navigation";
 import { loadPerformanceGoals } from "@/server/performance-goals";
 import { isAccessError, requireDocumentPermission } from "@/server/permissions";
 import { loadDocumentWorkflow } from "@/server/workflow";
-import { Panel } from "../../goal-centre/goal-centre-ui";
+import { Panel } from "../../goal-centre-ui";
 import { DevelopmentGoalsReview, GroupGoalsReview, PerformanceGoalsReview } from "./document-review";
 
-// Validator's view of an employee's document (WF-03, WF-22): every part read-only, then
-// "Zatwierdź" / "Zwróć do poprawy" and the status history. Anyone who may view the document
-// (N+2 and above) sees it without buttons; anyone else gets 404, never "forbidden".
+// A report's document from "Mój zespół" (WF-03, WF-22): every part read-only, then the status
+// panel. Validate mode ("Zatwierdź" / "Zwróć do poprawy") only when the permission module says
+// canValidate (live N+1 or WF-09 override); anyone else who may view it (N+2 and above) gets the
+// read-only preview; anyone who may not gets 404, never "forbidden".
 
 type Props = { params: Promise<{ documentId: string }> };
 
@@ -47,8 +48,9 @@ async function TeamDocument({ params }: Props) {
   if (documentId === null) notFound();
   const [viewer, locale, t] = await Promise.all([requireEmployee(), getLocale(), getTranslations()]);
 
+  let canValidate: boolean;
   try {
-    await requireDocumentPermission(db(), viewer, documentId, "view");
+    canValidate = (await requireDocumentPermission(db(), viewer, documentId, "view")).permissions.validate;
   } catch (error: unknown) {
     if (isAccessError(error)) notFound();
     throw error;
@@ -74,7 +76,7 @@ async function TeamDocument({ params }: Props) {
     <div className="flex flex-col gap-6">
       <Panel labelledBy="team-document-title">
         <Link
-          href="/team"
+          href="/goal-centre/team"
           className="inline-flex min-h-11 items-center gap-1 rounded-lg pr-2 text-sm font-semibold text-ink-soft transition-colors duration-200 hover:text-accent focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
         >
           <ChevronLeftIcon className="size-4" />
@@ -87,6 +89,14 @@ async function TeamDocument({ params }: Props) {
           {t("team.documentOf", { name: employeeName })}
         </h1>
         {employee.position && <p className="mt-1 text-ink-soft">{employee.position}</p>}
+        <p
+          className={`mt-4 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm font-semibold ${
+            canValidate ? "border-accent/50 text-accent" : "border-line-strong text-ink-soft"
+          }`}
+        >
+          {canValidate ? <PencilIcon className="size-4" /> : <EyeIcon className="size-4" />}
+          {canValidate ? t("team.modeValidate") : t("team.modeReadOnly")}
+        </p>
       </Panel>
 
       <DocumentStatusPanel workflow={workflow} titleId="team-document-status" />

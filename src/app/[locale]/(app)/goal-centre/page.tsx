@@ -13,6 +13,7 @@ import { requireEmployee } from "@/server/current-employee";
 import { getSelectedCycle } from "@/server/cycles";
 import { db } from "@/server/db";
 import { loadDevelopmentGoals } from "@/server/development-goals";
+import { getVisibleTabs } from "@/server/navigation";
 import { loadPerformanceGoals } from "@/server/performance-goals";
 import { loadDocumentWorkflow } from "@/server/workflow";
 import {
@@ -25,7 +26,7 @@ import {
   type GroupGoalView,
   type SectionCounters,
 } from "@/server/group-goals";
-import { CounterRings, Notice, Panel, SectionChips, type SectionChip } from "./goal-centre-ui";
+import { CounterRings, Notice, Panel, SectionChips, ViewSwitch, type SectionChip } from "./goal-centre-ui";
 import { GroupGoalCards, type GroupGoalCardData } from "./group-goal-cards";
 
 // Goal Centre ("Centrum celów", G1-01..12, WF-23) for the cycle year picked in the header.
@@ -56,12 +57,15 @@ const TOTAL_TONES = {
 } as const;
 
 async function GoalCentre() {
-  const [viewer, selected, locale, t] = await Promise.all([
+  const [viewer, selected, locale, t, tabs] = await Promise.all([
     requireEmployee(),
     getSelectedCycle(),
     getLocale(),
     getTranslations(),
+    getVisibleTabs(),
   ]);
+  // WF-20: the "Moje cele | Mój zespół" switch only for people with a team (same rule as the tab).
+  const hasTeam = tabs.includes("myTeam");
   const cycle = selected
     ? await db().cycle.findUnique({ where: { year: selected.year }, select: { id: true, year: true, status: true } })
     : null;
@@ -130,24 +134,33 @@ async function GoalCentre() {
             </h1>
             <p className="mt-1 text-sm font-semibold text-ink-soft">{t("goalCentre.myGoals")}</p>
           </div>
-          <CounterRings
-            label={t("goalCentre.allParts")}
-            items={[
-              { key: "drafts", label: t("goalCentre.totals.drafts"), value: totals.drafts, tone: TOTAL_TONES.drafts },
-              {
-                key: "addedToPlan",
-                label: t("goalCentre.totals.addedToPlan"),
-                value: totals.done,
-                tone: TOTAL_TONES.addedToPlan,
-              },
-              {
-                key: "changedByManager",
-                label: t("goalCentre.totals.changedByManager"),
-                value: totals.changedByManager,
-                tone: TOTAL_TONES.changedByManager,
-              },
-            ]}
-          />
+          <div className="flex flex-col items-start gap-5 sm:items-end">
+            {hasTeam && (
+              <ViewSwitch
+                active="mine"
+                label={t("goalCentre.viewSwitch")}
+                labels={{ mine: t("goalCentre.myGoals"), team: t("goalCentre.myTeam") }}
+              />
+            )}
+            <CounterRings
+              label={t("goalCentre.allParts")}
+              items={[
+                { key: "drafts", label: t("goalCentre.totals.drafts"), value: totals.drafts, tone: TOTAL_TONES.drafts },
+                {
+                  key: "addedToPlan",
+                  label: t("goalCentre.totals.addedToPlan"),
+                  value: totals.done,
+                  tone: TOTAL_TONES.addedToPlan,
+                },
+                {
+                  key: "changedByManager",
+                  label: t("goalCentre.totals.changedByManager"),
+                  value: totals.changedByManager,
+                  tone: TOTAL_TONES.changedByManager,
+                },
+              ]}
+            />
+          </div>
         </div>
       </Panel>
 

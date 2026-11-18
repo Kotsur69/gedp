@@ -84,7 +84,7 @@ export function buildHomeTasks({ cycle, document, toValidate }: HomeTaskInput): 
   if (toValidate && toValidate.count > 0) {
     tasks.push({
       kind: "DOCUMENTS_TO_VALIDATE",
-      href: "/team",
+      href: "/goal-centre/team",
       updatedAt: toValidate.lastUpdatedAt,
       count: toValidate.count,
     });

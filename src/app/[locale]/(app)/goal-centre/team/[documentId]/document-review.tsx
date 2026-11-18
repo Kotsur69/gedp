@@ -6,9 +6,9 @@ import { formatDate } from "@/i18n/format";
 import type { DevelopmentGoalView } from "@/server/development-goals";
 import type { GroupGoalView } from "@/server/group-goals";
 import type { PerformanceGoalView } from "@/server/performance-goals";
-import { catalogName, displayDate, PROGRESS_LABEL_KEY } from "../../goal-centre/development/goal-format";
-import { Panel } from "../../goal-centre/goal-centre-ui";
-import { isUnitCode } from "../../goal-centre/performance/goal-format";
+import { catalogName, displayDate, PROGRESS_LABEL_KEY } from "../../development/goal-format";
+import { Panel } from "../../goal-centre-ui";
+import { isUnitCode } from "../../performance/goal-format";
 
 // Read-only summary of the three parts for the validator (WF-03, WF-22). Server-rendered, no
 // handlers: the validator decides in the status panel; goal changes by N+1 (WF-04) come later.

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   availableActions,
+  CLOSING_CONDITION_COUNT,
+  closingProgress,
   DOCUMENT_STATUSES,
   EDITABLE_DOCUMENT_STATUSES,
   findTransition,
@@ -170,5 +172,35 @@ describe("closing conditions (WF-C1..C5)", () => {
       { code: "minPerformanceGoals", min: 3, current: 2 },
       { code: "minDevelopmentGoals", min: 2, current: 1 },
     ]);
+  });
+
+  describe("completion for the team view (WF-21)", () => {
+    it("a complete document meets every condition", () => {
+      expect(closingProgress(complete)).toEqual({ met: CLOSING_CONDITION_COUNT, total: CLOSING_CONDITION_COUNT });
+    });
+
+    it("an empty document meets none: the folded weight message still counts as unmet", () => {
+      const empty: ClosingInput = {
+        ...complete,
+        groupGoals: complete.groupGoals.map((goal) => ({ ...goal, isAcknowledged: false, commitment: null })),
+        performanceGoals: [],
+        developmentGoals: [],
+      };
+      expect(closingProgress(empty)).toEqual({ met: 0, total: CLOSING_CONDITION_COUNT });
+    });
+
+    it("a wrong weight sum costs exactly one condition", () => {
+      const input = { ...complete, performanceGoals: [{ state: "W_PLANIE" as const, weight: 80 }] };
+      expect(closingProgress(input)).toEqual({ met: CLOSING_CONDITION_COUNT - 1, total: CLOSING_CONDITION_COUNT });
+    });
+
+    it("no goal in the plan meets a required weight sum of 0", () => {
+      const input: ClosingInput = {
+        ...complete,
+        performanceGoals: [],
+        rules: { minPerformanceGoals: 0, requiredWeightSum: 0, minDevelopmentGoals: 1 },
+      };
+      expect(closingProgress(input)).toEqual({ met: CLOSING_CONDITION_COUNT, total: CLOSING_CONDITION_COUNT });
+    });
   });
 });

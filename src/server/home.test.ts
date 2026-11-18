@@ -41,7 +41,7 @@ describe("buildHomeTasks", () => {
     });
     expect(tasks).toEqual([
       { kind: "FILL_GOALS", href: "/goal-centre", updatedAt: UPDATED },
-      { kind: "DOCUMENTS_TO_VALIDATE", href: "/team", updatedAt: UPDATED, count: 3 },
+      { kind: "DOCUMENTS_TO_VALIDATE", href: "/goal-centre/team", updatedAt: UPDATED, count: 3 },
     ]);
   });
 

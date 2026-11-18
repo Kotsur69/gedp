@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { CheckIcon } from "@/components/shell/icons";
 
 // Layout pieces shared by the Goal Centre screens (Part 1 on /goal-centre, Part 3 on
@@ -62,6 +63,47 @@ export function SectionChips({ label, chips }: { label: string; chips: readonly 
         </li>
       ))}
     </ul>
+  );
+}
+
+export type GoalCentreView = "mine" | "team";
+
+type ViewSwitchProps = {
+  active: GoalCentreView;
+  /** Accessible name of the switch ("Widok Centrum celów"). */
+  label: string;
+  labels: Readonly<Record<GoalCentreView, string>>;
+};
+
+const VIEW_HREF: Readonly<Record<GoalCentreView, string>> = { mine: "/goal-centre", team: "/goal-centre/team" };
+const VIEWS: readonly GoalCentreView[] = ["mine", "team"];
+
+/**
+ * WF-20 "Moje cele | Mój zespół", top right of Goal Centre (IMG03). Rendered only for people with
+ * a team; the team page guards itself as well. Two links, so each view has its own URL.
+ */
+export function ViewSwitch({ active, label, labels }: ViewSwitchProps) {
+  return (
+    <nav aria-label={label} className="shrink-0">
+      <ul className="inline-flex rounded-2xl border border-line-strong bg-canvas p-1">
+        {VIEWS.map((view) => {
+          const isActive = view === active;
+          return (
+            <li key={view}>
+              <Link
+                href={VIEW_HREF[view]}
+                aria-current={isActive ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-200 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
+                  isActive ? "bg-(image:--am-gradient) text-on-brand shadow-panel" : "text-ink-soft hover:text-accent"
+                }`}
+              >
+                {labels[view]}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 

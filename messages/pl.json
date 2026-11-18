@@ -208,7 +208,8 @@
     },
     "progressCounters": "Postęp celów",
     "openPart": "Przejdź do sekcji",
-    "backToGoalCentre": "Wróć do Centrum celów"
+    "backToGoalCentre": "Wróć do Centrum celów",
+    "viewSwitch": "Widok Centrum celów"
   },
   "groupGoals": {
     "sectionTitle": "Wspólne cele i oczekiwania całej Grupy",
@@ -501,14 +502,27 @@
     "empty": "Nie masz podwładnych w tym cyklu.",
     "toValidateTitle": "Dokumenty do walidacji",
     "toValidateEmpty": "Nie masz dokumentów czekających na walidację.",
-    "fullTeamComingSoon": "Pełny widok zespołu (lista podwładnych ze statusami dokumentów) przygotowujemy.",
     "backToTeam": "Wróć do zespołu",
     "documentOf": "Dokument: {name}",
     "acknowledgedOn": "Potwierdzono {date}",
     "notAcknowledged": "Nie potwierdzono",
     "commitment": "Zobowiązanie: {text}",
     "noGoals": "Brak celów w tej części.",
-    "dates": "{start} – {end}"
+    "dates": "{start} – {end}",
+    "listTitle": "Podwładni",
+    "membersCount": "{count, plural, one {# osoba} few {# osoby} many {# osób} other {# osoby}}",
+    "levelFilter": "Filtr poziomu",
+    "levelN": "Poziom {level}",
+    "notStarted": "Nie rozpoczęto",
+    "noDocument": "Brak dokumentu",
+    "completionValue": "{met}/{total}",
+    "completionDescription": "Spełnione warunki zamknięcia dokumentu: {met} z {total}",
+    "inactive": "Nieaktywny",
+    "neverUpdated": "–",
+    "emptyLevel": "Na tym poziomie nikogo nie ma.",
+    "truncated": "Lista pokazuje pierwsze {limit} osób. Zawęź ją filtrem poziomu.",
+    "modeValidate": "Tryb walidacji",
+    "modeReadOnly": "Podgląd – tylko do odczytu"
   },
   "admin": {
     "title": "Panel administratora",

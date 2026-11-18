@@ -208,7 +208,8 @@
     },
     "progressCounters": "Goal progress",
     "openPart": "Go to section",
-    "backToGoalCentre": "Back to Goal Centre"
+    "backToGoalCentre": "Back to Goal Centre",
+    "viewSwitch": "Goal Centre view"
   },
   "groupGoals": {
     "sectionTitle": "Common goals and expectations for the whole Group",
@@ -501,14 +502,27 @@
     "empty": "You have no reports in this cycle.",
     "toValidateTitle": "Documents to validate",
     "toValidateEmpty": "No documents are waiting for your validation.",
-    "fullTeamComingSoon": "The full team view (reports with their document status) is being prepared.",
     "backToTeam": "Back to team",
     "documentOf": "Document: {name}",
     "acknowledgedOn": "Acknowledged on {date}",
     "notAcknowledged": "Not acknowledged",
     "commitment": "Commitment: {text}",
     "noGoals": "No goals in this part.",
-    "dates": "{start} – {end}"
+    "dates": "{start} – {end}",
+    "listTitle": "Reports",
+    "membersCount": "{count, plural, one {# person} other {# people}}",
+    "levelFilter": "Level filter",
+    "levelN": "Level {level}",
+    "notStarted": "Not started",
+    "noDocument": "No document",
+    "completionValue": "{met}/{total}",
+    "completionDescription": "Document closing conditions met: {met} of {total}",
+    "inactive": "Inactive",
+    "neverUpdated": "–",
+    "emptyLevel": "Nobody at this level.",
+    "truncated": "The list shows the first {limit} people. Narrow it with the level filter.",
+    "modeValidate": "Validation mode",
+    "modeReadOnly": "Preview – read only"
   },
   "admin": {
     "title": "Administrator panel",

@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useSelectedLayoutSegment } from "next/navigation";
-import { tabForSegment, type TabId } from "@/components/shell/tabs";
+import { useSelectedLayoutSegments } from "next/navigation";
+import { tabForSegments, type TabId } from "@/components/shell/tabs";
 
-// Both components read the active screen from the route tree (useSelectedLayoutSegment), not from
+// Both components read the active screen from the route tree (useSelectedLayoutSegments), not from
 // the browser URL: proxy.ts rewrites every page to /[locale]/..., and usePathname() would differ
 // between the prerendered shell and the browser (hydration mismatch).
 
@@ -19,7 +19,7 @@ type MainTabsProps = {
 
 /** Main tabs (HOME-12). Scrolls sideways on a phone instead of wrapping or overflowing the page. */
 export function MainTabs({ tabs, label }: MainTabsProps) {
-  const activeTab = tabForSegment(useSelectedLayoutSegment());
+  const activeTab = tabForSegments(useSelectedLayoutSegments());
   return (
     <nav aria-label={label} className="-mx-4 sm:mx-0">
       <ul className="scrollbar-none flex snap-x overflow-x-auto px-4 sm:px-0">
@@ -60,7 +60,7 @@ type ScreenTitleProps = {
 
 /** "App name – screen name" in the header (HOME-16). Wraps rather than truncates on a phone. */
 export function ScreenTitle({ titles, fallback }: ScreenTitleProps) {
-  const activeTab = tabForSegment(useSelectedLayoutSegment());
+  const activeTab = tabForSegments(useSelectedLayoutSegments());
   return (
     <p className="text-base font-semibold text-balance text-ink sm:text-lg">
       {activeTab ? titles[activeTab] : fallback}

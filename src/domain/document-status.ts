@@ -165,3 +165,26 @@ export function missingClosingConditions(input: ClosingInput): MissingCondition[
   }
   return missing;
 }
+
+// ---------------------------------------------------------------------------
+// Completion (WF-21: "% complete" in the team view)
+// ---------------------------------------------------------------------------
+
+/** WF-C1..C5 as six checks: three Group goal types, min performance goals, weight sum, min development goals. */
+export const CLOSING_CONDITION_COUNT = 6;
+
+export interface ClosingProgress {
+  met: number;
+  total: number;
+}
+
+/** How many closing conditions a document already meets. */
+export function closingProgress(input: ClosingInput): ClosingProgress {
+  const missing = missingClosingConditions(input).length;
+  // missingClosingConditions folds the weight sum into "no goal in the plan" (one message is
+  // enough for the owner); for a completion count the weight sum is still unmet then.
+  const hasPerformanceInPlan = input.performanceGoals.some((goal) => goal.state === "W_PLANIE");
+  const isWeightFolded = !hasPerformanceInPlan && input.rules.requiredWeightSum !== 0;
+  const unmet = missing + (isWeightFolded ? 1 : 0);
+  return { met: CLOSING_CONDITION_COUNT - unmet, total: CLOSING_CONDITION_COUNT };
+}
