@@ -870,5 +870,24 @@
       "FAILED": "Saving failed. Please try again.",
       "INVALID_INPUT": "The correction could not be saved. Refresh the page and try again."
     }
+  },
+  "mail": {
+    "workflow": {
+      "toValidate": {
+        "subject": "GEDP {year}: document of {employeeName} is waiting for your validation",
+        "body": "The GEDP {year} document of {employeeName} has been sent to you for validation. Open it to approve it or return it for correction."
+      },
+      "approved": {
+        "subject": "GEDP {year}: your document has been approved",
+        "body": "Your GEDP {year} document has been approved. From now on you can update the progress of your goals."
+      },
+      "returned": {
+        "subject": "GEDP {year}: your document has been returned for correction",
+        "body": "Your GEDP {year} document has been returned for correction.\n\nComment from your validator:\n{comment}"
+      },
+      "statusLine": "Document status: {status}",
+      "linkLine": "Open the document: {link}",
+      "footer": "This message was sent automatically by {appName}. Please do not reply to it."
+    }
   }
 }

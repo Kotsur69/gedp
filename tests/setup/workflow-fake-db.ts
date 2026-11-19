@@ -16,6 +16,7 @@ export interface Person {
   validatorOverrideId: number | null;
   firstName: string;
   lastName: string;
+  email: string;
   isActive: boolean;
   isHrAdmin: boolean;
   /** Closure rows where this person is the descendant (depth >= 1), i.e. their N+1 and above. */
@@ -70,6 +71,7 @@ export function person(id: number, managerId: number | null, extra: Partial<Pers
     validatorOverrideId: null,
     firstName: "Test",
     lastName: `P${id}`,
+    email: `p${id}@example.com`,
     isActive: true,
     isHrAdmin: id === HR,
     ancestorIds: [],
@@ -205,6 +207,24 @@ export function createFakeDb(initial: State, options: FakeOptions = {}) {
         const found = state.people.find((p) => matches(p as unknown as Row, where));
         return found ? { id: found.id } : null;
       },
+      // WF-07 recipient lookup after the commit: the owner plus their N+1 and override contacts.
+      findUnique: async ({ where }: { where: { id: number } }) => {
+        if (Object.keys(where).join() !== "id") unsupported("employee.findUnique where", where);
+        const found = personById(where.id);
+        if (!found) return null;
+        const contact = (id: number | null) => {
+          const p = id === null ? undefined : personById(id);
+          return p ? { id: p.id, email: p.email, isActive: p.isActive } : null;
+        };
+        return {
+          firstName: found.firstName,
+          lastName: found.lastName,
+          email: found.email,
+          isActive: found.isActive,
+          manager: contact(found.managerId),
+          validatorOverride: contact(found.validatorOverrideId),
+        };
+      },
     },
     gedpDocument: {
       findUnique: async ({ where }: { where: { id: number } }) => {
@@ -314,7 +334,7 @@ export const untouchable = {
   $transaction: () => {
     throw new Error("database must not be touched");
   },
-} as unknown as WorkflowWriter;
+} as unknown as WorkflowWriter & WorkflowReader;
 
 export async function rejection(promise: Promise<unknown>): Promise<unknown> {
   return promise.then(

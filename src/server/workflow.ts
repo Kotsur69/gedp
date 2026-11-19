@@ -17,6 +17,7 @@ import {
 } from "@/domain/document-status";
 import { checkClosingConditions, type ClosingDocument, type MissingCondition } from "@/domain/closing-conditions";
 import { writeAudit } from "@/server/audit";
+import { notifyWorkflowTransition, type MailRecipientReader, type NotifyOptions } from "@/server/mail/workflow-mail";
 import {
   ForbiddenError,
   NotFoundError,
@@ -38,6 +39,7 @@ import {
 //   status and the actor in its WHERE -> document_status_history row -> audit row.
 // Who validates is decided by the permission module (live N+1 or validatorOverride, canValidate),
 // never by gedp_document.validatorId, which only records who last validated.
+// WF-07 e-mails go out only after that transaction committed (src/server/mail/workflow-mail.ts).
 
 const MAX_INT4 = 2_147_483_647;
 export const dbIdSchema = z.number().int().min(1).max(MAX_INT4);
@@ -138,12 +140,14 @@ interface LockedRow {
   documentStatus: string;
   cycleStatus: string;
   cycleId: number;
+  cycleYear: number;
 }
 
 async function lockDocument(tx: Tx, documentId: number): Promise<LockedRow | undefined> {
   // documentId is a validated int4; $queryRaw binds it as a parameter.
   const [locked] = await tx.$queryRaw<LockedRow[]>`
-    SELECT d.status::text AS "documentStatus", c.status::text AS "cycleStatus", c.id AS "cycleId"
+    SELECT d.status::text AS "documentStatus", c.status::text AS "cycleStatus", c.id AS "cycleId",
+           c.year AS "cycleYear"
     FROM gedp_document d JOIN cycle c ON c.id = d.cycle_id
     WHERE d.id = ${documentId}
     FOR UPDATE OF d FOR SHARE OF c`;
@@ -177,8 +181,21 @@ export interface TransitionResult {
 /**
  * "Wyślij do walidacji" / "Zatwierdź" / "Zwróć do poprawy". Throws WorkflowError (400 / 409),
  * NotFoundError (missing or invisible document) or ForbiddenError (wrong actor).
+ * After the transaction commits, sends the WF-07 e-mail; a mail failure is logged, never thrown,
+ * so it cannot undo or hide a committed status change.
  */
-export async function transitionDocument(db: WorkflowWriter, viewer: Viewer, input: unknown): Promise<TransitionResult> {
+export async function transitionDocument(
+  db: WorkflowWriter & MailRecipientReader,
+  viewer: Viewer,
+  input: unknown,
+  mail: NotifyOptions = {},
+): Promise<TransitionResult> {
+  const committed = await commitTransition(db, viewer, input);
+  await notifyWorkflowTransition(db, committed.mail, mail);
+  return committed.result;
+}
+
+async function commitTransition(db: WorkflowWriter, viewer: Viewer, input: unknown) {
   const { documentId, action, comment } = parseWorkflowInput(transitionInputSchema, input);
   // Refused before any database call: a return without a reason, and a comment on an action that
   // takes none (it would land in the history the other side reads).
@@ -223,7 +240,15 @@ export async function transitionDocument(db: WorkflowWriter, viewer: Viewer, inp
       before: { status: transition.from },
       after: { status: transition.to, comment, historyId: entry.id },
     });
-    return { documentId, from: transition.from, to: transition.to, historyId: entry.id, changedAt: entry.createdAt };
+    const result: TransitionResult = {
+      documentId,
+      from: transition.from,
+      to: transition.to,
+      historyId: entry.id,
+      changedAt: entry.createdAt,
+    };
+    const mail = { documentId, employeeId: access.employeeId, to: transition.to, cycleYear: locked.cycleYear, comment };
+    return { result, mail };
   });
 }
 

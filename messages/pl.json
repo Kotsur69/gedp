@@ -870,5 +870,24 @@
       "FAILED": "Nie udało się zapisać. Spróbuj ponownie.",
       "INVALID_INPUT": "Nie udało się zapisać korekty. Odśwież stronę i spróbuj ponownie."
     }
+  },
+  "mail": {
+    "workflow": {
+      "toValidate": {
+        "subject": "GEDP {year}: dokument – {employeeName} – czeka na Twoją walidację",
+        "body": "Dokument GEDP {year} – {employeeName} – został przekazany Tobie do walidacji. Otwórz go, aby go zatwierdzić albo zwrócić do poprawy."
+      },
+      "approved": {
+        "subject": "GEDP {year}: Twój dokument został zatwierdzony",
+        "body": "Twój dokument GEDP {year} został zatwierdzony. Od teraz możesz aktualizować postęp swoich celów."
+      },
+      "returned": {
+        "subject": "GEDP {year}: Twój dokument został zwrócony do poprawy",
+        "body": "Twój dokument GEDP {year} został zwrócony do poprawy.\n\nKomentarz walidatora:\n{comment}"
+      },
+      "statusLine": "Status dokumentu: {status}",
+      "linkLine": "Otwórz dokument: {link}",
+      "footer": "Ta wiadomość została wysłana automatycznie przez {appName}. Prosimy na nią nie odpowiadać."
+    }
   }
 }
