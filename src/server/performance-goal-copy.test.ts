@@ -62,16 +62,16 @@ describe.skipIf(!hasTestDb)("copy from last year - database", () => {
       { amei: "B", managerAmei: "M1" },
     ]);
     await db.$transaction((tx) => rebuildHierarchy(tx), HIERARCHY_TX_OPTIONS);
-    previousCycleId = (await db.cycle.create({ data: { year: 2026, status: "OTWARTY" } })).id;
+    // HR-05: only one cycle may be open; ensureOwnDocument gets the status explicitly below.
+    previousCycleId = (await db.cycle.create({ data: { year: 2026, status: "ZAMKNIETY" } })).id;
     cycleId = (await db.cycle.create({ data: { year: 2027, status: "OTWARTY" } })).id;
-    const upsertType = (code: string, isNumeric: boolean) =>
-      db.targetType.upsert({
-        where: { code },
-        update: { isActive: true, isNumeric },
-        create: { code, namePl: code, nameEn: code, isNumeric },
-      });
-    numericTypeId = (await upsertType("LICZBA", true)).id;
-    textTypeId = (await upsertType("TEKST", false)).id;
+    // HR-05: each cycle has its own target types; the copy matches them by code.
+    const createType = (inCycle: number, code: string, isNumeric: boolean) =>
+      db.targetType.create({ data: { cycleId: inCycle, code, namePl: code, nameEn: code, isNumeric } });
+    const previousNumericTypeId = (await createType(previousCycleId, "LICZBA", true)).id;
+    const previousTextTypeId = (await createType(previousCycleId, "TEKST", false)).id;
+    numericTypeId = (await createType(cycleId, "LICZBA", true)).id;
+    textTypeId = (await createType(cycleId, "TEKST", false)).id;
 
     const previous = await documentIn("A", previousCycleId);
     await db.performanceGoal.createMany({
@@ -81,13 +81,13 @@ describe.skipIf(!hasTestDb)("copy from last year - database", () => {
           title: "Year-end goal",
           dueDate: new Date("2026-12-31T00:00:00.000Z"),
           progress: 100,
-          targetTypeId: numericTypeId,
+          targetTypeId: previousNumericTypeId,
           targetValue: "120",
           weight: 60,
           state: "W_PLANIE",
           changedByManager: true,
         },
-        { documentId: previous, title: "Draft goal", state: "SZKIC", targetTypeId: textTypeId },
+        { documentId: previous, title: "Draft goal", state: "SZKIC", targetTypeId: previousTextTypeId },
         { documentId: previous, title: "Cancelled goal", state: "ANULOWANY" },
       ],
     });
@@ -114,6 +114,13 @@ describe.skipIf(!hasTestDb)("copy from last year - database", () => {
       changedByManager: false,
     });
     expect(await db.auditLog.count({ where: { entity: "performance_goal", action: "COPY" } })).toBe(2);
+  });
+
+  it("[HR-05] a type the new cycle does not have falls back to Tekst", async () => {
+    await db.targetType.delete({ where: { id: numericTypeId } });
+    const documentId = await documentIn("A", cycleId);
+    const [first] = await copyPerformanceGoalsFromPreviousYear(db, as("A"), { documentId });
+    expect(first).toMatchObject({ targetTypeId: textTypeId, target: "120" });
   });
 
   it("a deactivated target type falls back to Tekst", async () => {

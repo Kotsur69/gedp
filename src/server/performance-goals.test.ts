@@ -29,9 +29,9 @@ import { ForbiddenError, NotFoundError, type Viewer } from "./permissions";
 const CONTEXT: PerformanceGoalContext = {
   cycleYear: 2027,
   targetTypes: [
-    { id: 1, code: "LICZBA", isNumeric: true },
-    { id: 2, code: "TEKST", isNumeric: false },
-    { id: 3, code: "PROCENT", isNumeric: true },
+    { id: 1, code: "LICZBA", namePl: "Liczba", nameEn: "Number", isNumeric: true },
+    { id: 2, code: "TEKST", namePl: "Tekst", nameEn: "Text", isNumeric: false },
+    { id: 3, code: "PROCENT", namePl: "Procent", nameEn: "Percent", isNumeric: true },
   ],
 };
 
@@ -330,15 +330,11 @@ describe.skipIf(!hasTestDb)("performance goals - database", () => {
     await db.$transaction((tx) => rebuildHierarchy(tx), HIERARCHY_TX_OPTIONS);
     cycleId = (await db.cycle.create({ data: { year: 2027, status: "OTWARTY" } })).id;
 
-    // target_type is reference data that resetTestDb keeps; upsert so the test does not need the seed.
-    const upsertType = (code: string, isNumeric: boolean) =>
-      db.targetType.upsert({
-        where: { code },
-        update: { isActive: true, isNumeric },
-        create: { code, namePl: code, nameEn: code, isNumeric },
-      });
-    numericTypeId = (await upsertType("LICZBA", true)).id;
-    await upsertType("TEKST", false);
+    // HR-05: target types belong to the cycle, so resetTestDb's cycle truncate clears them too.
+    const createType = (code: string, isNumeric: boolean) =>
+      db.targetType.create({ data: { cycleId, code, namePl: code, nameEn: code, isNumeric } });
+    numericTypeId = (await createType("LICZBA", true)).id;
+    await createType("TEKST", false);
   });
 
   afterAll(async () => {

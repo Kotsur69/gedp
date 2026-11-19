@@ -22,8 +22,9 @@ import type { Viewer } from "@/server/permissions";
 // created goal, all in one transaction.
 //
 // What a copy keeps and resets [ZAŁ - eGEDP does not show the copied goal]:
-// - kept: title, description, measures, target, weight, target type (falls back to "Tekst" when
-//   HR has deactivated it; a target is valid text for "Tekst", so the draft stays valid);
+// - kept: title, description, measures, target, weight, target type (the type with the same code in
+//   the new cycle; falls back to "Tekst" when that cycle lacks it or HR has deactivated it; a target
+//   is valid text for "Tekst", so the draft stays valid);
 // - reset: state SZKIC, progress "Do rozpoczęcia", the N+1 marker;
 // - due date: same day and month in the new year (29 Feb -> 28 Feb), so it lies inside the cycle.
 // Cancelled goals are not copied. Copying twice creates the goals twice: the window says how many
@@ -83,17 +84,19 @@ export async function copyPerformanceGoalsFromPreviousYear(
     const existing = await tx.performanceGoal.count({ where: { documentId } });
     if (existing + sources.length > MAX_GOALS_PER_DOCUMENT) throw new PerformanceGoalError("TOO_MANY_GOALS");
 
+    // HR-05: each cycle has its own target type list, so a source type is matched by code in the
+    // new cycle; a code that is missing or inactive there falls back to the default "Tekst".
     const types = await tx.targetType.findMany({
-      where: { OR: [{ isActive: true }, { code: DEFAULT_TARGET_TYPE_CODE }] },
-      select: { id: true, code: true },
+      where: { cycleId: document.cycleId, OR: [{ isActive: true }, { code: DEFAULT_TARGET_TYPE_CODE }] },
+      select: { id: true, code: true, isActive: true },
     });
     const fallbackTypeId = types.find((type) => type.code === DEFAULT_TARGET_TYPE_CODE)?.id;
     if (fallbackTypeId === undefined) throw new PerformanceGoalError("DEFAULT_TARGET_TYPE_MISSING");
-    const usableTypeIds = new Set(types.map((type) => type.id));
+    const activeTypeIdByCode = new Map(types.filter((type) => type.isActive).map((type) => [type.code, type.id]));
 
     const created: PerformanceGoalView[] = [];
     for (const source of sources) {
-      const keepsType = source.targetTypeId !== null && usableTypeIds.has(source.targetTypeId);
+      const ownTypeId = source.targetType ? activeTypeIdByCode.get(source.targetType.code) : undefined;
       const row = await tx.performanceGoal.create({
         data: {
           documentId,
@@ -102,7 +105,7 @@ export async function copyPerformanceGoalsFromPreviousYear(
           measures: source.measures,
           dueDate: copiedDueDate(source.dueDate, document.cycleYear),
           progress: 0,
-          targetTypeId: keepsType ? source.targetTypeId : fallbackTypeId,
+          targetTypeId: ownTypeId ?? fallbackTypeId,
           targetValue: source.targetValue,
           weight: source.weight,
           state: "SZKIC",

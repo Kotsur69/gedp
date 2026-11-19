@@ -55,7 +55,7 @@ export const GROUP_GOAL_TEMPLATES: ReadonlyArray<{
   { type: "BHP", sortOrder: 3, contentPl: `${PLACEHOLDER_PL}\n${BHP_PL}`, contentEn: `${PLACEHOLDER_EN}\n${BHP_EN}` },
 ];
 
-// TargetType has no sort column: rows are created in this order, so ids follow it on a fresh database.
+// Seeded into every cycle in this order (sort_order 1..n); HR reorders them per cycle (HR-05).
 export const TARGET_TYPES = [
   { code: "LICZBA", namePl: "Liczba", nameEn: "Number", isNumeric: true },
   { code: "TEKST", namePl: "Tekst", nameEn: "Text", isNumeric: false },

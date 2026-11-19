@@ -295,8 +295,8 @@ async function insertGoals(client: Client, documentId: number, cycle: CycleRow, 
        (document_id, title, description, measures, target_type_id, target_value, due_date, progress, weight, state, updated_at)
      SELECT $1, $2, $3, 'Średni czas przezbrojenia w minutach', tt.id, 'Poniżej 30 minut', make_date($4, 9, 30), 0, 100,
             'W_PLANIE', now()
-       FROM target_type tt WHERE tt.code = 'TEKST'`,
-    [documentId, title, description, cycle.year],
+       FROM target_type tt WHERE tt.code = 'TEKST' AND tt.cycle_id = $5`,
+    [documentId, title, description, cycle.year, cycle.id],
   );
   await client.query(
     `INSERT INTO development_goal

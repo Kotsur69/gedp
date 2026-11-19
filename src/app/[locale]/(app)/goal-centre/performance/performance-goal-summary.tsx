@@ -10,6 +10,7 @@ import {
   displayTarget,
   findTargetType,
   isNamedTargetType,
+  targetTypeName,
   isUnitCode,
   PROGRESS_LABEL_KEY,
   type PerformanceGoalItem,
@@ -24,9 +25,15 @@ export function PerformanceGoalSummary({ goal, context }: SummaryProps) {
   const tGlossary = useTranslations("glossary");
   const locale = useLocale() as Locale;
   const code = goal.targetTypeCode;
-  const isNumeric = findTargetType(context.targetTypes, goal.targetTypeId)?.isNumeric ?? false;
+  const ownType = findTargetType(context.targetTypes, goal.targetTypeId);
+  const isNumeric = ownType?.isNumeric ?? false;
   const unit = isUnitCode(code) ? ` ${t(`targetUnits.${code}`)}` : "";
-  const typeLabel = isNamedTargetType(code) ? tGlossary(`targetTypes.${code}`) : code;
+  // The HR-managed name of the goal's type; the glossary or the code only if the type is not loaded.
+  const typeLabel = ownType
+    ? targetTypeName(ownType, locale)
+    : isNamedTargetType(code)
+      ? tGlossary(`targetTypes.${code}`)
+      : code;
 
   return (
     <div className="flex flex-col gap-6">

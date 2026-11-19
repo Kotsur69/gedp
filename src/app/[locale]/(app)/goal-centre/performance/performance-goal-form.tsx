@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { DatePicker } from "@/components/goals/date-picker";
 import { describedControl, GOAL_CONTROL_CLASSES, GoalField } from "@/components/goals/goal-field";
 import { IconSelect } from "@/components/goals/icon-select";
@@ -19,9 +19,10 @@ import {
   type GoalProgress,
   type PerformanceGoalContext,
 } from "@/domain/performance-goal";
+import type { Locale } from "@/i18n/config";
 import {
   findTargetType,
-  isNamedTargetType,
+  targetTypeName,
   isUnitCode,
   PROGRESS_LABEL_KEY,
   type PerformanceGoalItem,
@@ -124,7 +125,7 @@ export function PerformanceGoalFields(props: FieldsProps) {
   });
 
   const type = findTargetType(context.targetTypes, values.targetTypeId === "" ? null : Number(values.targetTypeId));
-  const typeLabel = (code: string) => (isNamedTargetType(code) ? tGlossary(`targetTypes.${code}`) : code);
+  const locale = useLocale() as Locale;
   const unit = type && isUnitCode(type.code) ? t(`targetUnits.${type.code}`) : null;
 
   return (
@@ -161,7 +162,7 @@ export function PerformanceGoalFields(props: FieldsProps) {
               placeholder={tControls("chooseOption")}
               options={context.targetTypes.map((option) => ({
                 value: String(option.id),
-                label: typeLabel(option.code),
+                label: targetTypeName(option, locale),
                 icon: <TargetTypeIcon code={option.code} />,
               }))}
               onChange={set("targetTypeId")}

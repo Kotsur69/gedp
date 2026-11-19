@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import type { CycleStatus } from "@/generated/prisma/enums";
+import { MAX_CYCLE_YEAR, MIN_CYCLE_YEAR } from "@/domain/cycle-config";
 import { requireEmployee } from "@/server/current-employee";
 import { db } from "@/server/db";
 
@@ -12,10 +13,6 @@ import { db } from "@/server/db";
 
 export const CYCLE_YEAR_COOKIE = "GEDP_CYCLE_YEAR";
 export const CYCLE_YEAR_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
-
-// Plausible cycle years; anything else in the cookie or an action payload is noise.
-const MIN_CYCLE_YEAR = 2000;
-const MAX_CYCLE_YEAR = 2100;
 
 export interface CycleOption {
   year: number;
@@ -34,7 +31,10 @@ export interface CycleChoice {
   selected: SelectedCycle | null;
 }
 
-/** A four-digit year within the plausible range, or null. Accepts the cookie string or a number. */
+/**
+ * A four-digit year within MIN_CYCLE_YEAR..MAX_CYCLE_YEAR (shared with the HR-05 cycle panel), or
+ * null: anything else in the cookie, a URL or an action payload is noise. Accepts a string or a number.
+ */
 export function parseCycleYear(raw: unknown): number | null {
   const year = typeof raw === "string" && /^\d{4}$/.test(raw) ? Number(raw) : raw;
   if (typeof year !== "number" || !Number.isInteger(year)) return null;

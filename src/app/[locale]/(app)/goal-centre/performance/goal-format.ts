@@ -17,7 +17,10 @@ export type PerformanceGoalItem = PerformanceGoalData & {
   targetTypeCode: string | null;
 };
 
-/** Target types with a glossary label (glossary.targetTypes); a type HR adds later shows its code. */
+/**
+ * Target types with a glossary label (glossary.targetTypes). Only the fallback for a goal whose type
+ * is not among the loaded options; the label shown normally is the HR-managed name (targetTypeName).
+ */
 export const NAMED_TARGET_TYPE_CODES = ["LICZBA", "TEKST", "PROCENT", "TONY", "EURO", "USD"] as const;
 export type NamedTargetTypeCode = (typeof NAMED_TARGET_TYPE_CODES)[number];
 export const isNamedTargetType = (code: string | null): code is NamedTargetTypeCode =>
@@ -34,6 +37,11 @@ export function findTargetType(
   id: number | null,
 ): TargetTypeOption | undefined {
   return id === null ? undefined : types.find((type) => type.id === id);
+}
+
+/** The name HR gave the type for this cycle (HR-05), in the viewer's language. */
+export function targetTypeName(type: Pick<TargetTypeOption, "namePl" | "nameEn">, locale: Locale): string {
+  return locale === "en" ? type.nameEn : type.namePl;
 }
 
 /** "12.5" -> "12,5" in Polish; free text ("Tekst") is shown as typed. */

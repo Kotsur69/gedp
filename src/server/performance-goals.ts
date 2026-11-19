@@ -274,8 +274,13 @@ export async function loadPerformanceGoals(
   };
 }
 
+/** HR-05 list order: the order HR set in the cycle panel, ties by creation. */
+const targetTypeOrder: Prisma.TargetTypeOrderByWithRelationInput[] = [{ sortOrder: "asc" }, { id: "asc" }];
+const targetTypeOptionSelect = { id: true, code: true, namePl: true, nameEn: true, isNumeric: true } as const;
+
 /**
  * Form context for a document: cycle year and selectable target types (same data the server uses).
+ * Target types belong to a cycle (HR-05); the year is unique, so it names the cycle.
  * `keepTypeIds`: types the document's goals already use, kept even if HR has deactivated them.
  */
 export async function loadGoalFormContext(
@@ -284,9 +289,12 @@ export async function loadGoalFormContext(
   keepTypeIds: readonly number[] = [],
 ): Promise<PerformanceGoalContext> {
   const targetTypes = await db.targetType.findMany({
-    where: { OR: [{ isActive: true }, { code: DEFAULT_TARGET_TYPE_CODE }, { id: { in: [...keepTypeIds] } }] },
-    select: { id: true, code: true, isNumeric: true },
-    orderBy: { id: "asc" },
+    where: {
+      cycle: { year: cycleYear },
+      OR: [{ isActive: true }, { code: DEFAULT_TARGET_TYPE_CODE }, { id: { in: [...keepTypeIds] } }],
+    },
+    select: targetTypeOptionSelect,
+    orderBy: targetTypeOrder,
   });
   return { cycleYear, targetTypes };
 }
@@ -340,13 +348,18 @@ async function lockGoal<D>(
 const lockEditableGoal = (tx: Tx, viewer: Viewer, goalId: number) => lockGoal(tx, viewer, goalId, lockEditableDocument);
 
 /**
- * Active target types, plus the default "Tekst" and `keepTypeId` even if HR has deactivated them:
- * a goal keeps its type, and a goal without one can always fall back to the default.
+ * Active target types of the document's cycle (HR-05), plus the default "Tekst" and `keepTypeId`
+ * even if HR has deactivated them: a goal keeps its type, and a goal without one can always fall
+ * back to the default. A type id from another cycle is never offered, so it fails validation.
  */
-async function loadTargetTypes(tx: Tx, keepTypeId: number | null): Promise<TargetTypeOption[]> {
+async function loadTargetTypes(tx: Tx, cycleId: number, keepTypeId: number | null): Promise<TargetTypeOption[]> {
   const kept: Prisma.TargetTypeWhereInput[] = [{ isActive: true }, { code: DEFAULT_TARGET_TYPE_CODE }];
   if (keepTypeId !== null) kept.push({ id: keepTypeId });
-  return tx.targetType.findMany({ where: { OR: kept }, select: { id: true, code: true, isNumeric: true } });
+  return tx.targetType.findMany({
+    where: { cycleId, OR: kept },
+    select: targetTypeOptionSelect,
+    orderBy: targetTypeOrder,
+  });
 }
 
 function parseWithTypes(mode: GoalSaveMode, goal: unknown, context: PerformanceGoalContext): PerformanceGoalData {
@@ -381,11 +394,11 @@ export async function createPerformanceGoal(
   parseGoal(mode, goal);
 
   return db.$transaction(async (tx) => {
-    const { cycleYear } = await lockEditableDocument(tx, viewer, documentId);
+    const { cycleId, cycleYear } = await lockEditableDocument(tx, viewer, documentId);
     if ((await tx.performanceGoal.count({ where: { documentId } })) >= MAX_GOALS_PER_DOCUMENT) {
       throw new PerformanceGoalError("TOO_MANY_GOALS");
     }
-    const data = parseWithTypes(mode, goal, { cycleYear, targetTypes: await loadTargetTypes(tx, null) });
+    const data = parseWithTypes(mode, goal, { cycleYear, targetTypes: await loadTargetTypes(tx, cycleId, null) });
     const row = await tx.performanceGoal.create({
       data: { documentId, ...goalColumns(data, mode) },
       select: goalSelect,
@@ -421,7 +434,7 @@ export async function updatePerformanceGoal(
     if (before.state === "ANULOWANY") throw new PerformanceGoalError("GOAL_CANCELLED");
 
     const saveMode: GoalSaveMode = before.state === "W_PLANIE" ? "PLAN" : mode;
-    const targetTypes = await loadTargetTypes(tx, before.targetTypeId);
+    const targetTypes = await loadTargetTypes(tx, document.cycleId, before.targetTypeId);
     const data = parseWithTypes(saveMode, goal, { cycleYear: document.cycleYear, targetTypes });
     // Unchanged goal: no write and no audit row, so repeated saves cannot grow audit_log.
     const unchanged =
@@ -488,7 +501,7 @@ export async function correctPerformanceGoalAsHr(
 }
 
 interface ContentEditor {
-  lockDocument: DocumentLocker<{ cycleYear: number }>;
+  lockDocument: DocumentLocker<{ cycleId: number; cycleYear: number }>;
   auditAction: string;
   /** WF-04 sets "Zmieniony przez N+1"; HR-07 leaves the flag as it is. */
   marksChangedByManager: boolean;
@@ -513,7 +526,7 @@ async function updateGoalContent(
     if (before.state === "ANULOWANY") throw new PerformanceGoalError("GOAL_CANCELLED");
 
     const saveMode: GoalSaveMode = before.state === "W_PLANIE" ? "PLAN" : "DRAFT";
-    const targetTypes = await loadTargetTypes(tx, before.targetTypeId);
+    const targetTypes = await loadTargetTypes(tx, document.cycleId, before.targetTypeId);
     const data = parseWithTypes(saveMode, goal, { cycleYear: document.cycleYear, targetTypes });
     // Unchanged goal: no write, no flag and no audit row.
     if (JSON.stringify(snapshot({ ...data, state: before.state })) === JSON.stringify(snapshot(before))) return before;

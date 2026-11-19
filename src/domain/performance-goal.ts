@@ -69,10 +69,12 @@ export const PERFORMANCE_GOAL_ERROR_CODES = [
 ] as const;
 export type GoalInputErrorCode = (typeof PERFORMANCE_GOAL_ERROR_CODES)[number];
 
-/** One target_type row as the form and the server need it. */
+/** One target_type row as the form and the server need it. Names are HR-managed per cycle (HR-05). */
 export interface TargetTypeOption {
   id: number;
   code: string;
+  namePl: string;
+  nameEn: string;
   isNumeric: boolean;
 }
 

@@ -277,7 +277,7 @@ export function createFakeDb(initial: State, options: FakeOptions = {}) {
     },
     performanceGoal: goalTable(() => state.performanceGoals),
     // Only the default "Tekst" type: enough for a draft goal's full-replace edit.
-    targetType: { findMany: async () => [{ id: 1, code: "TEKST", isNumeric: false }] },
+    targetType: { findMany: async () => [{ id: 1, code: "TEKST", namePl: "Tekst", nameEn: "Text", isNumeric: false }] },
     developmentGoal: goalTable(() => state.developmentGoals),
     documentStatusHistory: {
       create: async ({ data }: { data: Omit<State["history"][number], "id" | "createdAt"> }) => {

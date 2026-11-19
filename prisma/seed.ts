@@ -171,14 +171,19 @@ async function seedCycle(tx: Tx, year: number, status: "OTWARTY" | "ZAMKNIETY"):
       create: { cycleId: cycle.id, ...a },
     });
   }
+  // HR-05: every cycle owns its target type list.
+  for (const [index, t] of TARGET_TYPES.entries()) {
+    const data = { namePl: t.namePl, nameEn: t.nameEn, isNumeric: t.isNumeric, isActive: true, sortOrder: index + 1 };
+    await tx.targetType.upsert({
+      where: { cycleId_code: { cycleId: cycle.id, code: t.code } },
+      update: data,
+      create: { cycleId: cycle.id, code: t.code, ...data },
+    });
+  }
   return cycle.id;
 }
 
 async function seedReferenceData(tx: Tx): Promise<void> {
-  for (const t of TARGET_TYPES) {
-    const data = { namePl: t.namePl, nameEn: t.nameEn, isNumeric: t.isNumeric, isActive: true };
-    await tx.targetType.upsert({ where: { code: t.code }, update: data, create: { code: t.code, ...data } });
-  }
   for (const key of CONTENT_BLOCK_KEYS) {
     const data = { contentPl: TO_BE_DIRECTED, contentEn: TO_BE_DIRECTED, publishedAt: FIXED_PUBLISHED_AT };
     await tx.contentBlock.upsert({
@@ -197,7 +202,7 @@ async function seedDocuments2026(tx: Tx, cycleId: number, specs: EmployeeSpec[],
     ...eligible.filter((s) => s.level === 4).slice(0, DOCS_2026_TEAM_LEADS),
   ];
   const templates = await tx.groupGoalTemplate.findMany({ where: { cycleId }, orderBy: { sortOrder: "asc" } });
-  const targetTypes = await tx.targetType.findMany();
+  const targetTypes = await tx.targetType.findMany({ where: { cycleId } });
   const targetIdByCode = new Map(targetTypes.map((t) => [t.code, t.id]));
   const area = await tx.developmentArea.findFirstOrThrow({ where: { cycleId } });
   const competencies = await tx.competency.findMany({ where: { cycleId }, orderBy: { nameEn: "asc" } });

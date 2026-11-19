@@ -334,6 +334,8 @@ function CommitmentField({
 
 /**
  * HR text is plain text (never HTML): lines starting with "- " become a list, the rest paragraphs.
+ * HR edits it in the cycle panel (HR-05, up to 20 000 characters), so it must stay React text nodes:
+ * never pass it to a markdown or HTML renderer without a sanitising, element-allowlisted setup.
  * The tinted panel marks it as imposed text, apart from the person's own bordered entry (S07).
  */
 function HrText({ content }: { content: string }) {

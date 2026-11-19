@@ -3,8 +3,10 @@
 // Convention: PascalCase models / camelCase fields in code, snake_case tables / columns in the database.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  // HR-05: "only one open cycle" is a partial unique index on cycle.status.
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -138,7 +140,10 @@ model Cycle {
   documents          GedpDocument[]
   competencies       Competency[]
   developmentAreas   DevelopmentArea[]
+  targetTypes        TargetType[]
 
+  // HR-05: at most one cycle is open at a time, enforced by the database as well as the panel.
+  @@unique([status], map: "cycle_single_open_key", where: raw("status = 'OTWARTY'"))
   @@map("cycle")
 }
 
@@ -188,16 +193,22 @@ model DevelopmentArea {
   @@map("development_area")
 }
 
+// HR-05: the target type list belongs to a cycle, so a copied cycle can change it without touching
+// earlier years. `code` stays stable across copies (icons and glossary labels are keyed by it).
 model TargetType {
   id        Int     @id @default(autoincrement())
-  code      String  @unique
+  cycleId   Int     @map("cycle_id")
+  code      String
   namePl    String  @map("name_pl")
   nameEn    String  @map("name_en")
   isNumeric Boolean @default(false) @map("is_numeric")
   isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
 
+  cycle            Cycle             @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   performanceGoals PerformanceGoal[]
 
+  @@unique([cycleId, code])
   @@map("target_type")
 }
 
