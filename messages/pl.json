@@ -874,11 +874,69 @@
       }
     },
     "content": {
+      "title": "Treści",
+      "cardHint": "Komunikat startowy, tekst powitalny i linki w nagłówku (PL i EN).",
+      "intro": "Teksty widoczne dla wszystkich pracowników. Każde „Opublikuj” zapisuje nową wersję, która jest widoczna od razu, bez ponownego wdrożenia. Zmiany trafiają do dziennika audytu.",
       "startAnnouncement": "Komunikat startowy",
+      "startAnnouncementHint": "Okno pokazywane po zalogowaniu. Każdy widzi daną wersję raz. Puste pole w danym języku wyłącza okno w tym języku.",
+      "announcementTitle": "Komunikat",
       "welcomeText": "Tekst powitalny",
+      "welcomeTextHint": "Tekst wprowadzający na stronie startowej, pod powitaniem. Puste pole ukrywa go w danym języku.",
       "headerLinks": "Linki w nagłówku",
-      "preview": "Podgląd",
-      "publish": "Opublikuj"
+      "headerLinksHint": "Adresy linków w nagłówku każdej strony. Puste pole ukrywa link w danym języku.",
+      "hrContactsLink": "Lista kontaktów HR",
+      "hrContactsLinkHint": "Link „Lista kontaktów HR”.",
+      "toolkitLink": "GEDP Toolkit",
+      "toolkitLinkHint": "Link „GEDP Toolkit”.",
+      "textLabel": {
+        "pl": "Treść po polsku",
+        "en": "Treść po angielsku"
+      },
+      "urlLabel": {
+        "pl": "Adres (wersja polska)",
+        "en": "Adres (wersja angielska)"
+      },
+      "markdownHint": "**pogrubienie**, „- ” na początku wiersza = punkt listy, [tekst](https://adres) = link. Bez kodu HTML.",
+      "markdownHintHeadings": "„## ” na początku wiersza = nagłówek, **pogrubienie**, „- ” = punkt listy, [tekst](https://adres) = link. Bez kodu HTML.",
+      "urlHint": "Pełny adres zaczynający się od https:// lub http://.",
+      "toolbar": {
+        "label": "Formatowanie: {field}",
+        "heading": "Nagłówek",
+        "headingPlaceholder": "Nagłówek",
+        "bold": "Pogrubienie",
+        "boldPlaceholder": "pogrubiony tekst",
+        "list": "Lista punktowana",
+        "listPlaceholder": "punkt listy",
+        "link": "Link",
+        "linkPlaceholder": "tekst linku"
+      },
+      "previewOf": "Podgląd: {field}",
+      "previewEmpty": "Brak treści – nic się nie pokaże.",
+      "versionLabel": "Wersja {version}, opublikowana {date}",
+      "neverPublished": "Jeszcze nie opublikowano",
+      "publish": "Opublikuj",
+      "publishing": "Publikowanie…",
+      "published": "Opublikowano wersję {version}.",
+      "unchanged": "Bez zmian – nic nie opublikowano.",
+      "announcementConfirm": "Po publikacji komunikat pokaże się ponownie wszystkim użytkownikom przy następnym wejściu. Opublikować?",
+      "confirmPublish": "Tak, opublikuj",
+      "cancel": "Anuluj",
+      "errors": {
+        "INVALID_INPUT": "Popraw zaznaczone pola.",
+        "TEXT_TOO_LONG": "Tekst jest za długi.",
+        "INVALID_TEXT": "Tekst zawiera niedozwolone znaki (np. ukryte znaki sterujące).",
+        "HTML_NOT_ALLOWED": "Kod HTML nie jest obsługiwany. Użyj formatowania z przycisków nad polem.",
+        "UNSAFE_LINK": "Każdy link musi prowadzić do adresu https://, http:// lub mailto:.",
+        "INVALID_URL": "Podaj pełny adres zaczynający się od https:// lub http://.",
+        "STALE": "W międzyczasie ktoś opublikował nowszą wersję. Odśwież stronę i wprowadź zmiany ponownie.",
+        "FORBIDDEN": "Nie masz uprawnień administratora HR.",
+        "FAILED": "Nie udało się opublikować. Spróbuj ponownie."
+      },
+      "conflict": {
+        "text": "W międzyczasie inna osoba z HR opublikowała wersję {version}. Wczytaj jej treść (Twoje zmiany zostaną odrzucone) albo zachowaj swoją – kolejne „Opublikuj” zastąpi tamtą wersję.",
+        "loadTheirs": "Wczytaj jej wersję",
+        "keepMine": "Zachowaj moją treść"
+      }
     },
     "changeReason": "Powód zmiany",
     "changeReasonRequired": "Podaj powód zmiany",

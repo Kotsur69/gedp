@@ -1,6 +1,6 @@
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { connection } from "next/server";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { BrandLogo } from "@/components/brand-logo";
 import { LanguageSwitch } from "@/components/language-switch";
 import { SignOutForm } from "@/components/sign-out-form";
@@ -9,9 +9,11 @@ import { CycleYearSelect } from "@/components/shell/cycle-year-select";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { ExternalLinkIcon, EyeIcon } from "@/components/shell/icons";
 import { orderedTabs, TAB_IDS, type TabId } from "@/components/shell/tabs";
+import type { Locale } from "@/i18n/config";
 import { requireEmployee } from "@/server/current-employee";
 import { getCycleChoice } from "@/server/cycles";
-import { readHeaderLinks } from "@/server/header-links";
+import { db } from "@/server/db";
+import { loadHeaderLinks } from "@/server/header-links";
 import { getVisibleTabs } from "@/server/navigation";
 
 // App header (HOME-16): logo, "app – screen", cycle year, HR links, theme, language, account, tabs.
@@ -128,12 +130,15 @@ async function CycleSlot() {
   );
 }
 
-/** "Lista kontaktów HR" / "GEDP Toolkit" (Q-08): runtime config, each hidden while unset. */
+// Both link slots (phone and desktop placement) render per request; read the links once.
+const getHeaderLinks = cache((locale: Locale) => loadHeaderLinks(db(), locale, process.env));
+
+/** "Lista kontaktów HR" / "GEDP Toolkit" (Q-08, HR-06): set by HR per language, each hidden while blank. */
 async function LinksSlot({ className }: { className: string }) {
-  // Read the environment per request, not at build time: changing a URL needs a restart only.
+  // Read per request, not at build time: an address HR publishes shows without a redeploy.
   await connection();
-  const links = readHeaderLinks(process.env);
-  const t = await getTranslations("header");
+  const [locale, t] = await Promise.all([getLocale(), getTranslations("header")]);
+  const links = await getHeaderLinks(locale);
   const items = [
     { href: links.hrContacts, label: t("hrContacts") },
     { href: links.toolkit, label: t("toolkit") },
