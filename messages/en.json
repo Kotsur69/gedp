@@ -874,11 +874,69 @@
       }
     },
     "content": {
+      "title": "Content",
+      "cardHint": "Start announcement, welcome text and header links (PL and EN).",
+      "intro": "Texts every employee sees. Each “Publish” saves a new version that shows right away, without a redeploy. Changes are recorded in the audit log.",
       "startAnnouncement": "Start announcement",
+      "startAnnouncementHint": "Window shown after sign-in. Everyone sees each version once. A blank field switches the window off in that language.",
+      "announcementTitle": "Announcement",
       "welcomeText": "Welcome text",
+      "welcomeTextHint": "Intro text on the start page, under the greeting. A blank field hides it in that language.",
       "headerLinks": "Header links",
-      "preview": "Preview",
-      "publish": "Publish"
+      "headerLinksHint": "Addresses of the links in every page header. A blank field hides the link in that language.",
+      "hrContactsLink": "HR Contact List",
+      "hrContactsLinkHint": "The “HR Contact List” link.",
+      "toolkitLink": "GEDP Toolkit",
+      "toolkitLinkHint": "The “GEDP Toolkit” link.",
+      "textLabel": {
+        "pl": "Polish text",
+        "en": "English text"
+      },
+      "urlLabel": {
+        "pl": "Address (Polish version)",
+        "en": "Address (English version)"
+      },
+      "markdownHint": "**bold**, “- ” at the start of a line = bullet point, [text](https://address) = link. No HTML code.",
+      "markdownHintHeadings": "“## ” at the start of a line = heading, **bold**, “- ” = bullet point, [text](https://address) = link. No HTML code.",
+      "urlHint": "Full address starting with https:// or http://.",
+      "toolbar": {
+        "label": "Formatting: {field}",
+        "heading": "Heading",
+        "headingPlaceholder": "Heading",
+        "bold": "Bold",
+        "boldPlaceholder": "bold text",
+        "list": "Bulleted list",
+        "listPlaceholder": "list item",
+        "link": "Link",
+        "linkPlaceholder": "link text"
+      },
+      "previewOf": "Preview: {field}",
+      "previewEmpty": "No content – nothing will be shown.",
+      "versionLabel": "Version {version}, published {date}",
+      "neverPublished": "Not published yet",
+      "publish": "Publish",
+      "publishing": "Publishing…",
+      "published": "Version {version} published.",
+      "unchanged": "No changes – nothing published.",
+      "announcementConfirm": "After publishing, the announcement will show again to every user on their next visit. Publish?",
+      "confirmPublish": "Yes, publish",
+      "cancel": "Cancel",
+      "errors": {
+        "INVALID_INPUT": "Correct the highlighted fields.",
+        "TEXT_TOO_LONG": "The text is too long.",
+        "INVALID_TEXT": "The text contains characters that are not allowed (e.g. hidden control characters).",
+        "HTML_NOT_ALLOWED": "HTML code is not supported. Use the formatting buttons above the field.",
+        "UNSAFE_LINK": "Every link must point to an https://, http:// or mailto: address.",
+        "INVALID_URL": "Enter a full address starting with https:// or http://.",
+        "STALE": "Someone published a newer version meanwhile. Reload the page and make your changes again.",
+        "FORBIDDEN": "You do not have HR administrator rights.",
+        "FAILED": "Publishing failed. Please try again."
+      },
+      "conflict": {
+        "text": "Another HR user published version {version} meanwhile. Load their text (your changes will be discarded) or keep yours – the next “Publish” will replace their version.",
+        "loadTheirs": "Load their version",
+        "keepMine": "Keep my text"
+      }
     },
     "changeReason": "Reason for change",
     "changeReasonRequired": "Please give a reason for the change",
