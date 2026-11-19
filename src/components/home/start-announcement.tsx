@@ -53,7 +53,7 @@ export function StartAnnouncement({ version, children, labels }: StartAnnounceme
       ref={dialogRef}
       aria-labelledby={titleId}
       onClose={handleClose}
-      className="m-auto max-h-[85dvh] w-[min(100%-2rem,42rem)] flex-col overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card transition-[opacity,translate] duration-200 ease-out backdrop:bg-ink/45 backdrop:backdrop-blur-sm open:flex starting:open:translate-y-2 starting:open:opacity-0 motion-reduce:transition-none"
+      className="m-auto max-h-[85dvh] w-[min(100%-2rem,42rem)] flex-col overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card transition-[opacity,translate] duration-200 ease-out backdrop:bg-scrim backdrop:backdrop-blur-sm open:flex starting:open:translate-y-2 starting:open:opacity-0 motion-reduce:transition-none"
     >
       <span aria-hidden="true" className="h-1 shrink-0 bg-(image:--am-gradient)" />
       <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line py-3 pr-3 pl-6 sm:pl-8">

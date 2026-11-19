@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { type ReactNode, Suspense } from "react";
 import { getLocale, getTranslations } from "next-intl/server";
 import { LOCALES } from "@/i18n/config";
+import { resolveTheme, THEME_COOKIE } from "@/theme/config";
 import "../globals.css";
 
 // Gilroy: ArcelorMittal brand typeface (Branding/fonts). Regular for text, SemiBold for headings.
@@ -39,9 +41,12 @@ export default function RootLayout({ children }: LayoutProps<"/[locale]">) {
 
 async function RootDocument({ children }: { children: ReactNode }) {
   await connection();
-  const locale = await getLocale();
+  const [locale, store] = await Promise.all([getLocale(), cookies()]);
+  // The theme comes from the cookie on the server, so the first paint is already right (no flash).
+  // The switcher sets the same attribute after hydration and saves the cookie, so they stay equal.
+  const theme = resolveTheme(store.get(THEME_COOKIE)?.value);
   return (
-    <html lang={locale} className={`${gilroy.variable} h-full antialiased`}>
+    <html lang={locale} data-theme={theme} className={`${gilroy.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>
   );

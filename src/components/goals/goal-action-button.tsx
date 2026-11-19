@@ -21,7 +21,7 @@ type GoalActionButtonProps = {
 const VARIANT_CLASSES = {
   primary: "bg-(image:--am-gradient) tracking-[0.04em] text-on-brand hover:opacity-90",
   secondary: "border border-line-strong bg-surface text-ink hover:border-accent hover:text-accent",
-  danger: "border border-danger/60 bg-surface text-danger hover:bg-danger hover:text-on-brand",
+  danger: "border border-danger/60 bg-surface text-danger hover:bg-danger hover:text-on-solid",
 } as const;
 
 const DISABLED_CLASSES = "cursor-not-allowed bg-line text-ink-soft";

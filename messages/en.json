@@ -29,6 +29,13 @@
       "label": "Language",
       "pl": "Polski",
       "en": "English"
+    },
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "saveFailed": "The theme could not be saved. Please try again."
     }
   },
   "glossary": {

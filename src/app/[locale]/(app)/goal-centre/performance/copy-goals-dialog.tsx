@@ -64,7 +64,7 @@ export function CopyGoalsDialog({ isOpen, documentId, previousYear, count, onClo
         setError(null);
         onClosed();
       }}
-      className="m-auto w-[min(100%-2rem,32rem)] rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-ink/45 backdrop:backdrop-blur-sm"
+      className="m-auto w-[min(100%-2rem,32rem)] rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-scrim backdrop:backdrop-blur-sm"
     >
       <div className="flex flex-col gap-4 px-6 pt-6 pb-2 sm:px-8">
         <div className="flex items-center gap-3">

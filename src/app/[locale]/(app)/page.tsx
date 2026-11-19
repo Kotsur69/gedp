@@ -170,7 +170,7 @@ function YearHighlight({ children, infoLabel }: { children: ReactNode; infoLabel
   return (
     <span className="inline-flex items-start gap-0.5 whitespace-nowrap">
       {/* Gradient text; Windows high-contrast drops backgrounds, so fall back to the system text colour. */}
-      <span className="bg-(image:--am-gradient) bg-clip-text text-transparent forced-colors:bg-none forced-colors:text-[CanvasText]">
+      <span className="bg-(image:--heading-gradient) bg-clip-text text-transparent forced-colors:bg-none forced-colors:text-[CanvasText]">
         {children}
       </span>
       <button

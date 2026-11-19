@@ -24,7 +24,7 @@ const ERROR_KEYS: Readonly<Record<string, LoginErrorKey>> = {
 const ERROR_ID = "login-error";
 const HINT_ID = "login-hint";
 const FIELD_CLASSES =
-  "h-12 w-full rounded-xl border border-line bg-white px-4 text-sm text-ink transition-colors focus:border-accent aria-invalid:border-danger";
+  "h-12 w-full rounded-xl border border-line bg-surface px-4 text-sm text-ink transition-colors focus:border-accent aria-invalid:border-danger";
 const LABEL_CLASSES = "mb-2 block text-xs font-semibold tracking-wider text-ink-soft uppercase";
 
 type LoginPageProps = {

@@ -116,7 +116,7 @@ export function PerformanceGoalDialog({ target, onClosed, ...rest }: DialogProps
       onKeyDown={handleKeyDown}
       onCancel={handleCancel}
       onClose={onClosed}
-      className="m-auto max-h-[94dvh] w-[min(100%-2rem,64rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-ink/45 backdrop:backdrop-blur-sm"
+      className="m-auto max-h-[94dvh] w-[min(100%-2rem,64rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-scrim backdrop:backdrop-blur-sm"
     >
       {activeTarget && (
         <DialogBody

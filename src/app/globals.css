@@ -13,8 +13,22 @@
  *
  * Contrast (WCAG AA), measured on white / on the strongest background wash:
  *   ink ~19:1, ink-soft 6.5:1 / 4.5:1, accent 6.9:1 / 4.8:1, danger 6.9:1 / 4.8:1, notice 9.3:1.
- * Light theme only for now.
+ *
+ * Light is the default theme. The opt-in dark theme lives in ONE block at the end of this file
+ * ("Dark theme"); removing dark mode = deleting that block, the `dark` variant below and the
+ * header toggle (src/components/theme-switch*.tsx, src/theme/).
  */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-theme="system"], [data-theme="system"] *) {
+      @slot;
+    }
+  }
+}
+
 @theme {
   --color-brand-purple: var(--am-purple);
   --color-brand-magenta: var(--am-magenta);
@@ -25,7 +39,10 @@
   /* Text */
   --color-ink: color-mix(in oklab, var(--am-purple) 40%, var(--am-black));
   --color-ink-soft: color-mix(in oklab, var(--color-ink) 62%, var(--am-white));
+  /* Text on the brand gradient (stays white in both themes). */
   --color-on-brand: var(--am-white);
+  /* Text on a solid accent / danger / ink fill (white in light, dark in dark). */
+  --color-on-solid: var(--am-white);
   /* Links, active tab, focus ring. */
   --color-accent: color-mix(in oklab, var(--am-magenta) 55%, var(--am-purple));
   --color-danger: color-mix(in oklab, var(--am-coral) 78%, var(--am-black));
@@ -40,6 +57,10 @@
   --color-surface: var(--am-white);
   --color-line: color-mix(in srgb, var(--am-purple) 15%, transparent);
   --color-line-strong: color-mix(in srgb, var(--am-purple) 32%, transparent);
+  /* Modal backdrop. */
+  --color-scrim: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  /* Logo wordmark (the orange mark is brand-logo in both themes). */
+  --color-logo-wordmark: var(--am-logo-grey);
 
   --font-sans: var(--font-gilroy), -apple-system, "Segoe UI", sans-serif;
 
@@ -56,6 +77,7 @@
   --am-coral: #e74341;
   --am-orange: #f58847;
   --am-logo-orange: #ff3700;
+  --am-logo-grey: #414141;
   --am-white: #ffffff;
   --am-black: #000000;
 
@@ -67,6 +89,8 @@
     var(--am-coral) 68%,
     var(--am-orange) 100%
   );
+  /* Gradient used as text colour (bg-clip-text); the dark theme lightens the stops. */
+  --heading-gradient: var(--am-gradient);
 }
 
 /* A modal <dialog> does not stop the page behind it from scrolling; this does, for every dialog. */
@@ -94,5 +118,66 @@ body {
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/*
+ * Dark theme (opt-in: <html data-theme="dark">, or "system" while the OS prefers dark).
+ * Overrides layer-2 tokens only; components never change. Plum-tinted neutrals derived from the
+ * same primitives, text and accents lightened rather than inverted.
+ *
+ * Contrast (WCAG AA), measured on surface / on the strongest wash under a glass card:
+ *   ink 15.1:1 / 15.2:1, ink-soft 7.9:1 / 7.9:1, accent 7.3:1 / 7.4:1, danger 7.3:1 / 7.4:1,
+ *   notice 9.5:1 (7.1:1 on notice-surface), on-solid on accent/danger 8.4:1,
+ *   focus ring (accent) 7.3:1 against surface, heading gradient >= 4.9:1 at its darkest stop.
+ *   on-brand stays white on the unchanged brand gradient (same as light).
+ */
+:root {
+  @variant dark {
+    color-scheme: dark;
+
+    --color-ink: color-mix(in oklab, var(--am-magenta) 5%, var(--am-white));
+    --color-ink-soft: color-mix(in oklab, var(--color-ink) 72%, var(--color-surface));
+    --color-on-solid: var(--color-canvas);
+    --color-accent: color-mix(in oklab, var(--am-magenta) 52%, var(--am-white));
+    --color-danger: color-mix(in oklab, var(--am-coral) 62%, var(--am-white));
+    --color-notice: color-mix(in oklab, var(--am-orange) 62%, var(--am-white));
+    --color-notice-surface: color-mix(in oklab, var(--am-orange) 18%, var(--color-surface));
+
+    --color-canvas: color-mix(
+      in oklab,
+      var(--am-purple) 14%,
+      color-mix(in oklab, var(--am-white) 15%, var(--am-black))
+    );
+    --color-wash-cool: color-mix(
+      in oklab,
+      var(--am-magenta) 24%,
+      color-mix(in oklab, var(--am-white) 15%, var(--am-black))
+    );
+    --color-wash-warm: color-mix(
+      in oklab,
+      var(--am-orange) 16%,
+      color-mix(in oklab, var(--am-white) 15%, var(--am-black))
+    );
+    --color-surface: color-mix(
+      in oklab,
+      var(--am-purple) 14%,
+      color-mix(in oklab, var(--am-white) 22%, var(--am-black))
+    );
+    --color-line: color-mix(in srgb, var(--am-white) 14%, transparent);
+    --color-line-strong: color-mix(in srgb, var(--am-white) 28%, transparent);
+    --color-scrim: color-mix(in srgb, var(--am-black) 60%, transparent);
+    --color-logo-wordmark: var(--am-white);
+
+    --shadow-card: 0 30px 70px -30px color-mix(in srgb, var(--am-black) 80%, transparent);
+    --shadow-panel: 0 10px 30px -18px color-mix(in srgb, var(--am-black) 70%, transparent);
+
+    --heading-gradient: linear-gradient(
+      110deg,
+      color-mix(in oklab, var(--am-purple) 60%, var(--am-white)) 0%,
+      color-mix(in oklab, var(--am-magenta) 60%, var(--am-white)) 35%,
+      color-mix(in oklab, var(--am-coral) 60%, var(--am-white)) 68%,
+      color-mix(in oklab, var(--am-orange) 60%, var(--am-white)) 100%
+    );
   }
 }

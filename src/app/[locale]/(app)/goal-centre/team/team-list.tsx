@@ -44,7 +44,7 @@ function LevelFilter({ view, t }: { view: TeamView; t: Translate }) {
                 aria-current={isActive ? "page" : undefined}
                 className={`inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-semibold transition-colors duration-200 motion-reduce:transition-none ${FOCUS_RING} ${
                   isActive
-                    ? "border-transparent bg-ink text-on-brand"
+                    ? "border-transparent bg-ink text-on-solid"
                     : "border-line-strong bg-surface text-ink hover:border-accent/60 hover:text-accent"
                 }`}
               >

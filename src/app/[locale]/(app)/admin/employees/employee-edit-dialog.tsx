@@ -51,7 +51,7 @@ export function EmployeeEditDialog({ employee, onClosed, onSaved }: EmployeeEdit
       onCancel={(event) => pendingRef.current && event.preventDefault()}
       // Browsers may close a modal on a repeated Escape without a cancelable event: reopen it.
       onClose={() => (pendingRef.current && employee ? dialogRef.current?.showModal() : onClosed())}
-      className="m-auto max-h-[92dvh] w-[min(100%-2rem,40rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-ink/45 backdrop:backdrop-blur-sm"
+      className="m-auto max-h-[92dvh] w-[min(100%-2rem,40rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-scrim backdrop:backdrop-blur-sm"
     >
       {employee && (
         <EditForm

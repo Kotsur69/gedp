@@ -7,5 +7,5 @@ export const DOCUMENT_STATUS_TONE: Readonly<Record<DocumentStatus | "NONE", stri
   SZKIC: "border-line-strong text-ink",
   DO_WALIDACJI: "border-accent/50 text-accent",
   ZWROCONY: "border-brand-orange/60 bg-notice-surface text-notice",
-  ZATWIERDZONY: "border-transparent bg-accent text-on-brand",
+  ZATWIERDZONY: "border-transparent bg-accent text-on-solid",
 };

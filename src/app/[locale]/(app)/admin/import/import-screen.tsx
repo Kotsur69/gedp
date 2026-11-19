@@ -29,7 +29,7 @@ type ImportScreenProps = {
 
 const ACCEPT = ".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv";
 const SECONDARY_BUTTON =
-  "h-11 cursor-pointer rounded-xl border border-line-strong bg-white px-5 font-semibold text-ink hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60";
+  "h-11 cursor-pointer rounded-xl border border-line-strong bg-surface px-5 font-semibold text-ink hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60";
 
 export function ImportScreen({ maxFileBytes, maxFileMb, guide }: ImportScreenProps) {
   const t = useTranslations("admin.import");
@@ -196,7 +196,7 @@ function PreviewSection({ preview, isPending, onConfirm, onReject }: PreviewSect
           type="button"
           onClick={onConfirm}
           disabled={isBlocked || isPending}
-          className="h-12 cursor-pointer rounded-xl bg-(image:--am-gradient) px-6 font-semibold tracking-[0.06em] text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-12 cursor-pointer rounded-xl bg-(image:--am-gradient) px-6 font-semibold tracking-[0.06em] text-on-brand hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPending ? t("confirming") : t("confirm")}
         </button>

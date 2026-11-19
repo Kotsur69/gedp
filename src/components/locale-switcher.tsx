@@ -32,7 +32,7 @@ export function LocaleSwitcher({ current, label, names }: LocaleSwitcherProps) {
       role="group"
       aria-label={label}
       aria-busy={isPending}
-      className="inline-flex shrink-0 items-center rounded-full border border-line bg-white/70 p-0.5 text-xs font-semibold tracking-[0.06em]"
+      className="inline-flex shrink-0 items-center rounded-full border border-line bg-surface/70 p-0.5 text-xs font-semibold tracking-[0.06em]"
     >
       {LOCALES.map((locale) => {
         const isActive = locale === current;
@@ -46,7 +46,7 @@ export function LocaleSwitcher({ current, label, names }: LocaleSwitcherProps) {
             disabled={isPending}
             onClick={() => handleSelect(locale)}
             className={`min-h-11 min-w-11 cursor-pointer rounded-full px-2.5 uppercase transition-colors duration-200 motion-reduce:transition-none disabled:cursor-wait ${
-              isActive ? "bg-(image:--am-gradient) text-white" : "text-ink-soft hover:text-accent"
+              isActive ? "bg-(image:--am-gradient) text-on-brand" : "text-ink-soft hover:text-accent"
             }`}
           >
             {locale}

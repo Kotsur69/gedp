@@ -92,7 +92,7 @@ async function ValidationInbox({ inbox, locale }: { inbox: readonly DocumentToVa
       <h2 id="to-validate-title" className="flex items-center gap-2 text-2xl font-semibold text-ink">
         {t("team.toValidateTitle")}
         {inbox.length > 0 && (
-          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-accent px-2 text-base text-on-brand tabular-nums">
+          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-accent px-2 text-base text-on-solid tabular-nums">
             {inbox.length}
           </span>
         )}

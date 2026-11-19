@@ -61,7 +61,7 @@ export function GroupGoalCards({ goals, documentId, canChange, commitmentMaxLeng
         ref={dialogRef}
         aria-labelledby="group-goal-title"
         onClose={() => setOpenId(null)}
-        className="m-auto max-h-[90dvh] w-[min(100%-2rem,44rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-ink/45 backdrop:backdrop-blur-sm"
+        className="m-auto max-h-[90dvh] w-[min(100%-2rem,44rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-scrim backdrop:backdrop-blur-sm"
       >
         {openGoal && (
           // key: another goal starts with fresh edit state.

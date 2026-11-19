@@ -29,6 +29,13 @@
       "label": "Język",
       "pl": "Polski",
       "en": "English"
+    },
+    "theme": {
+      "label": "Motyw",
+      "light": "Jasny",
+      "dark": "Ciemny",
+      "system": "Systemowy",
+      "saveFailed": "Nie udało się zapisać motywu. Spróbuj ponownie."
     }
   },
   "glossary": {

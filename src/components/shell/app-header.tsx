@@ -6,6 +6,7 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { SignOutForm } from "@/components/sign-out-form";
 import { MainTabs, ScreenTitle, type ShellTab } from "@/components/shell/active-screen";
 import { CycleYearSelect } from "@/components/shell/cycle-year-select";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { ExternalLinkIcon, EyeIcon } from "@/components/shell/icons";
 import { orderedTabs, TAB_IDS, type TabId } from "@/components/shell/tabs";
 import { requireEmployee } from "@/server/current-employee";
@@ -13,7 +14,7 @@ import { getCycleChoice } from "@/server/cycles";
 import { readHeaderLinks } from "@/server/header-links";
 import { getVisibleTabs } from "@/server/navigation";
 
-// App header (HOME-16): logo, "app – screen", cycle year, HR links, language, account, main tabs.
+// App header (HOME-16): logo, "app – screen", cycle year, HR links, theme, language, account, tabs.
 // The frame, logo, title and language switch are static (prerendered per language); everything
 // that depends on the person or on runtime config streams in through its own Suspense slot.
 // Hamburger and info-icon menus are left out until their content is known (Q-15).
@@ -39,13 +40,16 @@ export async function AppHeader() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
             <div className="order-1 flex shrink-0 items-center gap-4">
-              <BrandLogo priority className="h-8 w-auto sm:h-10" />
+              <BrandLogo className="h-8 w-auto sm:h-10" />
               <span className="hidden h-7 w-px bg-line-strong sm:block" aria-hidden="true" />
             </div>
             <div className="order-3 min-w-0 basis-full sm:order-2 sm:flex-1 sm:basis-auto lg:flex-none">
               <ScreenTitle titles={titles} fallback={appName} />
             </div>
             <div className="order-2 ml-auto flex items-center gap-2 sm:order-3 lg:order-4">
+              <Suspense fallback={<div className="h-12.5 w-34.5" aria-hidden="true" />}>
+                <ThemeSwitch />
+              </Suspense>
               <LanguageSwitch />
               <Suspense fallback={null}>
                 <AccountSlot />

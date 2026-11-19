@@ -100,7 +100,7 @@ export function DevelopmentGoalDialog({ target, onClosed, ...rest }: DialogProps
       aria-labelledby={TITLE_ID}
       onCancel={handleCancel}
       onClose={onClosed}
-      className="m-auto max-h-[92dvh] w-[min(100%-2rem,48rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-ink/45 backdrop:backdrop-blur-sm"
+      className="m-auto max-h-[92dvh] w-[min(100%-2rem,48rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-scrim backdrop:backdrop-blur-sm"
     >
       {activeTarget && (
         <DialogBody
@@ -407,7 +407,7 @@ type ActionButtonProps = {
 const BUTTON_CLASSES = {
   primary: "bg-(image:--am-gradient) tracking-[0.04em] text-on-brand hover:opacity-90",
   secondary: "border border-line-strong bg-surface text-ink hover:border-accent hover:text-accent",
-  danger: "border border-danger/60 bg-surface text-danger hover:bg-danger hover:text-on-brand",
+  danger: "border border-danger/60 bg-surface text-danger hover:bg-danger hover:text-on-solid",
 } as const;
 
 function ActionButton({ children, onClick, isBusy = false, variant = "primary", id }: ActionButtonProps) {

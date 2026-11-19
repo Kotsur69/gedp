@@ -17,10 +17,10 @@ export async function BrandCard({ title, subtitle, children }: BrandCardProps) {
   const t = await getTranslations("common");
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-3xl border border-white/90 bg-white/75 p-8 shadow-card backdrop-blur-xl">
+      <div className="w-full max-w-md rounded-3xl border border-surface/90 bg-surface/75 p-8 shadow-card backdrop-blur-xl">
         <header className="mb-8 flex flex-col items-start gap-3.5">
           <div className="flex w-full items-start justify-between gap-4">
-            <BrandLogo priority className="h-[60px] w-auto" />
+            <BrandLogo className="h-[60px] w-auto" />
             <LanguageSwitch />
           </div>
           <div>

@@ -72,7 +72,7 @@ export function BhpCorrection({ documentId, templateId, commitment, maxLength }:
         // Escape must not close the window while a save is running: its result would be lost.
         onCancel={(event) => pendingRef.current && event.preventDefault()}
         onClose={handleClose}
-        className="m-auto max-h-[92dvh] w-[min(100%-2rem,40rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-ink/45 backdrop:backdrop-blur-sm"
+        className="m-auto max-h-[92dvh] w-[min(100%-2rem,40rem)] overflow-hidden rounded-3xl border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-scrim backdrop:backdrop-blur-sm"
       >
         {isOpen && (
           <CorrectionForm
