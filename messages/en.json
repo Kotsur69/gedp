@@ -941,15 +941,93 @@
     "changeReason": "Reason for change",
     "changeReasonRequired": "Please give a reason for the change",
     "export": {
+      "title": "Data export",
+      "cardHint": "Download data to Excel or CSV: choose the data, year and employees",
+      "intro": "Choose which data, from which year and for which employees to download. The preview shows the number of people and records before you download the file. Every export is recorded in the audit log.",
+      "noCycle": "There is no cycle yet.",
       "whichData": "Which data",
       "whichYear": "Which year",
       "whichEmployees": "Which employees",
-      "onePerson": "One person",
-      "selectedPeople": "Selected people",
+      "format": "File format",
+      "dataTypes": {
+        "employees": {
+          "label": "Employees",
+          "hint": "Personal data and structure (current state), in the import file format"
+        },
+        "documents": {
+          "label": "Documents",
+          "hint": "GEDP document status and validator"
+        },
+        "groupGoals": {
+          "label": "Group goals",
+          "hint": "Group goal acknowledgements and H&S commitment"
+        },
+        "performanceGoals": {
+          "label": "Performance goals",
+          "hint": "Goals, measures, weights and progress"
+        },
+        "developmentGoals": {
+          "label": "Development goals",
+          "hint": "Development actions, competencies and progress"
+        },
+        "statusHistory": {
+          "label": "Status history",
+          "hint": "Every document status change with author and comment"
+        }
+      },
+      "formats": {
+        "xlsx": {
+          "label": "Excel (.xlsx)",
+          "hint": "One sheet per data type"
+        },
+        "csv": {
+          "label": "CSV",
+          "hint": "One data type, UTF-8 with BOM, \";\" separator"
+        }
+      },
+      "peopleKinds": {
+        "one": "One person",
+        "selected": "Selected people",
+        "department": "Department",
+        "all": "Everyone"
+      },
+      "ameiLabel": "Employee AMEI",
+      "ameiHint": "Start typing an AMEI to see suggestions.",
+      "addPeopleLabel": "Add people (AMEI)",
+      "addPeople": "Add",
+      "addPeopleHint": "You can paste several AMEIs separated by commas, spaces or new lines (max. {max}).",
+      "invalidAmei": "Invalid AMEI (letters A–Z and digits, 3–20 characters): {ameis}",
+      "tooManyPeople": "You can select at most {max} people. For a larger group choose a department or “Everyone”.",
+      "selectedCount": "Selected: {count, plural, one {# person} other {# people}}",
+      "removePerson": "Remove {amei} from the selection",
       "department": "Department",
-      "everyone": "Everyone",
-      "previewCounts": "People: {people} · Records: {records}",
-      "download": "Download"
+      "chooseDepartment": "Choose a department",
+      "everyoneHint": "Every employee in the database, including inactive ones.",
+      "showPreview": "Show preview",
+      "previewing": "Counting…",
+      "previewHint": "The preview saves and downloads nothing.",
+      "previewTitle": "Export preview · cycle {year}",
+      "peopleCount": "People",
+      "recordsCount": "Records in total",
+      "recordsCaption": "Number of records per data type",
+      "sheet": "Sheet",
+      "table": "Data",
+      "records": "Records",
+      "download": "Download",
+      "downloading": "Preparing the file…",
+      "auditNote": "The download will be recorded in the audit log.",
+      "downloaded": "Downloaded {fileName}. The export was recorded in the audit log.",
+      "failure": {
+        "INCOMPLETE": "Choose at least one data type and complete which employees the export covers.",
+        "INVALID_REQUEST": "Invalid selection. Refresh the page and try again.",
+        "CSV_SINGLE_TYPE": "A CSV file can hold only one data type. Choose one, or the Excel format.",
+        "FORBIDDEN": "You are not allowed to export data.",
+        "NO_CYCLE": "There is no cycle for the chosen year.",
+        "UNKNOWN_PEOPLE": "No employees found with AMEI:",
+        "NO_PEOPLE": "There is nobody in the chosen scope.",
+        "TOO_LARGE": "The scope is too large for one file. Narrow it (e.g. to a department).",
+        "FAILED": "The export could not be prepared. Please try again."
+      }
     },
     "audit": {
       "actor": "Who",

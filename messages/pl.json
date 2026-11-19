@@ -941,15 +941,93 @@
     "changeReason": "Powód zmiany",
     "changeReasonRequired": "Podaj powód zmiany",
     "export": {
+      "title": "Eksport danych",
+      "cardHint": "Pobierz dane do Excela lub CSV: wybierz dane, rok i pracowników",
+      "intro": "Wybierz, jakie dane, z którego roku i których pracowników chcesz pobrać. Podgląd pokaże liczbę osób i rekordów, zanim pobierzesz plik. Każdy eksport trafia do dziennika audytu.",
+      "noCycle": "Nie ma jeszcze żadnego cyklu.",
       "whichData": "Jakie dane",
       "whichYear": "Który rok",
       "whichEmployees": "Których pracowników",
-      "onePerson": "Jedna osoba",
-      "selectedPeople": "Wybrane osoby",
+      "format": "Format pliku",
+      "dataTypes": {
+        "employees": {
+          "label": "Pracownicy",
+          "hint": "Dane osobowe i struktura (stan bieżący), w formacie pliku importu"
+        },
+        "documents": {
+          "label": "Dokumenty",
+          "hint": "Status dokumentu GEDP i walidator"
+        },
+        "groupGoals": {
+          "label": "Cele Grupy",
+          "hint": "Potwierdzenia celów Grupy i zobowiązanie BHP"
+        },
+        "performanceGoals": {
+          "label": "Cele wydajnościowe",
+          "hint": "Cele, mierniki, wagi i postęp"
+        },
+        "developmentGoals": {
+          "label": "Cele rozwojowe",
+          "hint": "Działania rozwojowe, kompetencje i postęp"
+        },
+        "statusHistory": {
+          "label": "Historia statusów",
+          "hint": "Każda zmiana statusu dokumentu z autorem i komentarzem"
+        }
+      },
+      "formats": {
+        "xlsx": {
+          "label": "Excel (.xlsx)",
+          "hint": "Osobny arkusz dla każdego rodzaju danych"
+        },
+        "csv": {
+          "label": "CSV",
+          "hint": "Jeden rodzaj danych, UTF-8 ze znacznikiem BOM, separator „;”"
+        }
+      },
+      "peopleKinds": {
+        "one": "Jedna osoba",
+        "selected": "Wybrane osoby",
+        "department": "Dział",
+        "all": "Wszyscy"
+      },
+      "ameiLabel": "AMEI pracownika",
+      "ameiHint": "Zacznij wpisywać AMEI, aby zobaczyć podpowiedzi.",
+      "addPeopleLabel": "Dodaj osoby (AMEI)",
+      "addPeople": "Dodaj",
+      "addPeopleHint": "Możesz wkleić kilka AMEI oddzielonych przecinkiem, spacją lub nową linią (maks. {max}).",
+      "invalidAmei": "Nieprawidłowe AMEI (dozwolone litery A–Z i cyfry, 3–20 znaków): {ameis}",
+      "tooManyPeople": "Można wybrać najwyżej {max} osób. Dla większej grupy wybierz dział albo „Wszyscy”.",
+      "selectedCount": "Wybrano: {count, plural, one {# osobę} few {# osoby} many {# osób} other {# osoby}}",
+      "removePerson": "Usuń {amei} z wyboru",
       "department": "Dział",
-      "everyone": "Wszyscy",
-      "previewCounts": "Osoby: {people} · Rekordy: {records}",
-      "download": "Pobierz"
+      "chooseDepartment": "Wybierz dział",
+      "everyoneHint": "Wszyscy pracownicy w bazie, także nieaktywni.",
+      "showPreview": "Pokaż podgląd",
+      "previewing": "Liczenie…",
+      "previewHint": "Podgląd niczego nie zapisuje i nie pobiera.",
+      "previewTitle": "Podgląd eksportu · cykl {year}",
+      "peopleCount": "Osoby",
+      "recordsCount": "Rekordy razem",
+      "recordsCaption": "Liczba rekordów według rodzaju danych",
+      "sheet": "Arkusz",
+      "table": "Dane",
+      "records": "Rekordy",
+      "download": "Pobierz",
+      "downloading": "Przygotowywanie pliku…",
+      "auditNote": "Pobranie zostanie zapisane w dzienniku audytu.",
+      "downloaded": "Pobrano plik {fileName}. Eksport zapisano w dzienniku audytu.",
+      "failure": {
+        "INCOMPLETE": "Wybierz co najmniej jeden rodzaj danych i uzupełnij, których pracowników dotyczy eksport.",
+        "INVALID_REQUEST": "Nieprawidłowy wybór. Odśwież stronę i spróbuj ponownie.",
+        "CSV_SINGLE_TYPE": "Plik CSV może zawierać tylko jeden rodzaj danych. Wybierz jeden albo format Excel.",
+        "FORBIDDEN": "Nie masz uprawnień do eksportu danych.",
+        "NO_CYCLE": "Nie ma cyklu dla wybranego roku.",
+        "UNKNOWN_PEOPLE": "Nie znaleziono pracowników o AMEI:",
+        "NO_PEOPLE": "W wybranym zakresie nie ma żadnej osoby.",
+        "TOO_LARGE": "Zakres jest zbyt duży na jeden plik. Zawęź wybór (np. do działu).",
+        "FAILED": "Nie udało się przygotować eksportu. Spróbuj ponownie."
+      }
     },
     "audit": {
       "actor": "Kto",
