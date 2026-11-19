@@ -10,7 +10,7 @@ export function generateMetadata() {
 
 // "Administrator" (HOME-12): HR only; anyone else gets 404. Entry point of the HR panel; sections
 // are added here as they are built (today: the structure import, HR-01..03, employees, HR-04 + WF-09, cycles, HR-05,
-// content, HR-06, and documents, WF-08).
+// content, HR-06, documents, WF-08, and the data export, HR-08 + HR-12).
 export default function AdminPage() {
   return (
     <Suspense fallback={null}>
@@ -74,6 +74,15 @@ async function GuardedAdmin() {
           >
             <span className="block font-semibold text-ink">{t("sections.documents")}</span>
             <span className="mt-1 block text-sm text-ink-soft">{t("documents.cardHint")}</span>
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/admin/export"
+            className="block rounded-2xl border border-line bg-surface p-5 transition duration-200 hover:border-accent focus-visible:border-accent motion-reduce:transition-none"
+          >
+            <span className="block font-semibold text-ink">{t("sections.export")}</span>
+            <span className="mt-1 block text-sm text-ink-soft">{t("export.cardHint")}</span>
           </Link>
         </li>
       </ul>
